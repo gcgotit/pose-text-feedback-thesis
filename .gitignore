@@ -1,0 +1,14 @@
+# Ambiente virtuale
+.venv/
+
+# Dati grezzi (non versionare i dataset)
+data/
+
+# Risultati e output temporanei
+results/
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+
+# File di sistema macOS
+.DS_Store
