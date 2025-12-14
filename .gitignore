@@ -1,5 +1,6 @@
 # Ambiente virtuale
 .venv/
+venv311/
 
 # Dati grezzi (non versionare i dataset)
 data/
