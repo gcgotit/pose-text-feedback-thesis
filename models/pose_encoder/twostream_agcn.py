@@ -31,7 +31,8 @@ class Graph:
 class STGCNBlock(nn.Module):
     def __init__(self, in_channels, out_channels, A, kernel_size=9, stride=1):
         super().__init__()
-        self.A = A
+        # Registra A come buffer per assicurarsi che venga spostato su GPU con .to(device)
+        self.register_buffer('A', A)
         self.gcn = nn.Conv2d(in_channels, out_channels, kernel_size=(1, 1))
         self.tcn = nn.Conv2d(out_channels, out_channels, kernel_size=(kernel_size, 1), stride=(stride, 1), padding=(kernel_size // 2, 0))
         self.bn = nn.BatchNorm2d(out_channels)

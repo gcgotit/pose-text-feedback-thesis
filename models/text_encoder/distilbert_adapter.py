@@ -9,26 +9,11 @@ class DistilBERTTextEncoder(nn.Module):
         self.encoder = DistilBertModel.from_pretrained(pretrained_model)
         self.projection = nn.Linear(self.encoder.config.hidden_size, output_dim)
 
-    def forward(self, texts):
-        """
-        Args:
-            texts (List[str]): lista di stringhe da cui estrarre i text embeddings.
-
-        Returns:
-            Tensor di shape (B, output_dim)
-        """
-        tokens = self.tokenizer(
-            texts,
-            padding=True,
-            truncation=True,
-            max_length=512,
-            return_tensors='pt'
-        )
-        tokens = {k: v.to(self.encoder.device) for k, v in tokens.items()}
-
-        outputs = self.encoder(**tokens)
-        cls_embedding = outputs.last_hidden_state[:, 0, :]  # [CLS] token
-        return self.projection(cls_embedding)
+    def forward(self, input_ids, attention_mask):
+        outputs = self.encoder(input_ids=input_ids, attention_mask=attention_mask)
+        cls_embedding = outputs.last_hidden_state[:, 0]  # [CLS]
+        projected = self.projection(cls_embedding)
+        return projected
 
 if __name__ == "__main__":
     model = DistilBERTTextEncoder()

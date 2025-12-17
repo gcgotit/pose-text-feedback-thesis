@@ -108,6 +108,24 @@ def train_dual_encoder(temperature, device="cuda"):
     df = pd.DataFrame(losses)
     df.to_csv(log_csv, index=False)
 
+    # Validation su un batch
+    pose_encoder.eval()
+    text_encoder.eval()
+
+    with torch.no_grad():
+        sample_batch = next(iter(dataloader))
+        pose_tensor = sample_batch['pose'].to(device)
+        input_ids = sample_batch['input_ids'].to(device)
+        attention_mask = sample_batch['attention_mask'].to(device)
+
+        z_pose = pose_encoder(pose_tensor)
+        z_text = text_encoder(input_ids=input_ids, attention_mask=attention_mask)
+
+        val_loss = ntxent_loss(z_pose, z_text, temperature=temperature).item()
+
+        print(f"\n🔍 Loss di validazione su batch casuale: {val_loss:.4f}")
+
+
     # Save model weights
     torch.save(pose_encoder.state_dict(), os.path.join(log_dir, "pose_encoder.pt"))
     torch.save(text_encoder.state_dict(), os.path.join(log_dir, "text_encoder.pt"))
