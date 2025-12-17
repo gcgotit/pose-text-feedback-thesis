@@ -37,7 +37,8 @@ with open(data_dir / "flag3d_annotations.json", "r") as f:
 with open(data_dir / "flag3d_keypoint.pkl", "rb") as f:
     keypoints_data = pickle.load(f)
 
-
+def count_parameters(model):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 def train_dual_encoder(temperature, patience=5, device="cuda"):
     # Device selection (GPU or CPU) with fallback to CPU
@@ -56,6 +57,14 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     # Model
     pose_encoder = TwoStreamAGCN().to(device)
     text_encoder = DistilBERTTextEncoder().to(device)
+
+    # Conteggio parametri
+    pose_params = count_parameters(pose_encoder)
+    text_params = count_parameters(text_encoder)
+    total_params = pose_params + text_params
+    print(f"📦 Pose encoder: {pose_params:,} parametri")
+    print(f"📚 Text encoder: {text_params:,} parametri")
+    print(f"🔢 Totale: {total_params:,} parametri\n")
 
     # Optimizer
     params = list(pose_encoder.parameters()) + list(text_encoder.parameters())

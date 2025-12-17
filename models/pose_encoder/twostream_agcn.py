@@ -19,7 +19,7 @@ class Graph:
         self.A = self.build_adjacency_matrix()
 
     def build_adjacency_matrix(self):
-        A = torch.eye(self.num_nodes)
+        A = torch.eye(self.num_nodes) # matrice identità (25x25)
         for i, j in self.edges:
             A[i, j] = 1
             A[j, i] = 1  # simmetrico
