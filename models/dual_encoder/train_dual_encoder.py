@@ -39,7 +39,7 @@ with open(data_dir / "flag3d_keypoint.pkl", "rb") as f:
 
 
 
-def train_dual_encoder(temperature, device="cuda"):
+def train_dual_encoder(temperature, patience=5, device="cuda"):
     # Device selection (GPU or CPU) with fallback to CPU
     device = torch.device(device if torch.cuda.is_available() else "cpu")
 
@@ -72,7 +72,6 @@ def train_dual_encoder(temperature, device="cuda"):
     
     # Early stopping parameters
     best_loss = float('inf')
-    patience = 5
     epochs_without_improvement = 0
     max_epochs = 100  # Numero massimo di epoche (early stopping fermerà prima se necessario)
 
@@ -153,4 +152,4 @@ def train_dual_encoder(temperature, device="cuda"):
 
 
 if __name__ == "__main__":
-    train_dual_encoder(temperature=0.07)
+    train_dual_encoder(temperature=0.07, patience=5)

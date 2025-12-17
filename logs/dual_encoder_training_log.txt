@@ -25,4 +25,18 @@ Continuare il training per almeno 10 epoche totali per confermare la convergenza
 
 Validazione qualitativa: proiettare coppie pose-testo nello spazio latente e osservare la similarità.
 
-Aggiungere una fase di evaluation con model.eval() e torch.no_grad() su un subset di test.
+Aggiungere una fase di evaluation con model.eval() e torch.no_grad() su un subset di test.Epoch 1, Loss: 1.5526
+Epoch 2, Loss: 0.7610
+Epoch 3, Loss: 0.6137
+Epoch 4, Loss: 0.5459
+Epoch 5, Loss: 0.5105
+Epoch 6, Loss: 0.4732
+Epoch 7, Loss: 0.4579
+Epoch 8, Loss: 0.4376
+Epoch 9, Loss: 0.4304
+Epoch 10, Loss: 0.4145
+Epoch 11, Loss: 0.4247
+Epoch 12, Loss: 0.4250
+Epoch 13, Loss: 0.4177
+Epoch 14, Loss: 0.4406
+Epoch 15, Loss: 0.4456
