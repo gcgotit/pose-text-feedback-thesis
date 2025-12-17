@@ -69,9 +69,15 @@ def train_dual_encoder(temperature, device="cuda"):
     log_csv = os.path.join(log_dir, "dual_encoder_training_log.csv")
     
     losses = []
+    
+    # Early stopping parameters
+    best_loss = float('inf')
+    patience = 5
+    epochs_without_improvement = 0
+    max_epochs = 100  # Numero massimo di epoche (early stopping fermerà prima se necessario)
 
     # Training
-    for epoch in range(1, 4):  # 3 epochs
+    for epoch in range(1, max_epochs + 1):
         pose_encoder.train()
         text_encoder.train()
 
@@ -103,6 +109,23 @@ def train_dual_encoder(temperature, device="cuda"):
 
         with open(log_txt, "a") as f:
             f.write(f"Epoch {epoch}, Loss: {avg_loss:.4f}\n")
+        
+        # Early stopping check
+        if avg_loss < best_loss:
+            best_loss = avg_loss
+            epochs_without_improvement = 0
+            # Salva i migliori pesi quando la loss migliora
+            torch.save(pose_encoder.state_dict(), os.path.join(log_dir, "pose_encoder.pt"))
+            torch.save(text_encoder.state_dict(), os.path.join(log_dir, "text_encoder.pt"))
+            print(f"\n✅ Miglioramento! Loss: {avg_loss:.4f} (migliore: {best_loss:.4f})")
+        else:
+            epochs_without_improvement += 1
+            print(f"\n⚠️  Nessun miglioramento per {epochs_without_improvement} epoche. Loss: {avg_loss:.4f} (migliore: {best_loss:.4f})")
+        
+        # Early stopping: ferma se non c'è miglioramento per 'patience' epoche
+        if epochs_without_improvement >= patience:
+            print(f"\n🛑 Early stopping attivato dopo {epoch} epoche (nessun miglioramento per {patience} epoche consecutive).")
+            break
 
     # Save CSV
     df = pd.DataFrame(losses)
@@ -125,11 +148,8 @@ def train_dual_encoder(temperature, device="cuda"):
 
         print(f"\n🔍 Loss di validazione su batch casuale: {val_loss:.4f}")
 
-
-    # Save model weights
-    torch.save(pose_encoder.state_dict(), os.path.join(log_dir, "pose_encoder.pt"))
-    torch.save(text_encoder.state_dict(), os.path.join(log_dir, "text_encoder.pt"))
-    print("\n✅ Training completato e pesi salvati.")
+    # I pesi migliori sono già stati salvati durante il training quando la loss migliorava
+    print(f"\n✅ Training completato. Miglior loss: {best_loss:.4f} all'epoca {epoch - epochs_without_improvement}")
 
 
 if __name__ == "__main__":
