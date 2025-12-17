@@ -11,5 +11,9 @@ __pycache__/
 .ipynb_checkpoints/
 *.pyc
 
+# Pesi dei modelli
+logs/
+*.pt
+
 # File di sistema macOS
 .DS_Store

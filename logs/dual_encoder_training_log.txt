@@ -1,3 +1,28 @@
 Epoch 1, Loss: 1.4828
 Epoch 2, Loss: 0.7841
 Epoch 3, Loss: 0.6486
+
+L’analisi del log del training evidenzia un comportamento molto positivo in sole 3 epoche:
+
+Epoch 1 – Loss: 1.4828
+Inizio con loss elevata, atteso per un training contrastivo iniziale.
+
+Epoch 2 – Loss: 0.7841
+Calo drastico nella loss (↓47%), segno che i due encoder (pose e testo) stanno iniziando a trovare una rappresentazione condivisa efficace.
+
+Epoch 3 – Loss: 0.6486
+Ulteriore riduzione, meno marcata ma significativa, che suggerisce un trend ancora in miglioramento.
+
+Valutazione
+
+✅ Convergenza rapida: la NT-Xent Loss decresce velocemente, suggerendo che le embedding dei due domini si stanno allineando nel latent space.
+
+✅ Stabilità: nessuna oscillazione o risalita della loss.
+
+🔜 Prossimi step:
+
+Continuare il training per almeno 10 epoche totali per confermare la convergenza stabile.
+
+Validazione qualitativa: proiettare coppie pose-testo nello spazio latente e osservare la similarità.
+
+Aggiungere una fase di evaluation con model.eval() e torch.no_grad() su un subset di test.
