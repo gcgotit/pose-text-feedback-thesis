@@ -1,5 +1,15 @@
-# train_dual_encoder.py
+"""
+train_dual_encoder.py
+---------------------
+Addestramento del dual encoder (2S-AGCN + DistilBERT) su FLAG3D.
+Include:
+- Train/val split con Subset
+- Loss contrastiva NT-Xent
+- Early stopping su validation loss
+- Salvataggio log, pesi, grafici
+"""
 
+from typing import Any
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,13 +25,14 @@ project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-
+from torch.utils.data import Subset
 from models.pose_encoder.twostream_agcn import TwoStreamAGCN
 from models.text_encoder.distilbert_adapter import DistilBERTTextEncoder
 from data.FLAG3D.flag3d_dataset import FLAG3DDataset
 from utils import ntxent_loss  # contrastive loss
 import json
 import pickle
+import matplotlib.pyplot as plt
 
 # Percorso alla directory dei dati
 data_dir = project_root / "data" / "FLAG3D"
@@ -37,6 +48,12 @@ with open(data_dir / "flag3d_annotations.json", "r") as f:
 with open(data_dir / "flag3d_keypoint.pkl", "rb") as f:
     keypoints_data = pickle.load(f)
 
+with open(data_dir / "flag3d_split.json") as f:
+    split = json.load(f)
+train_indices = split["train_indices"]
+val_indices = split["val_indices"]
+
+
 def count_parameters(model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -44,15 +61,20 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     # Device selection (GPU or CPU) with fallback to CPU
     device = torch.device(device if torch.cuda.is_available() else "cpu")
 
-    # Costruisci il dataset
-    dataset = FLAG3DDataset(
+    # Costruisci il dataset                                                                                                  
+    full_dataset = FLAG3DDataset(
     metadata_df=metadata_df,
     annotations_dict=annotations_dict,
     keypoints_data=keypoints_data,
     device=device
 )
+    # Split dataset in train and val
+    train_dataset = Subset(full_dataset, train_indices)
+    val_dataset = Subset(full_dataset, val_indices)
 
-    dataloader = DataLoader(dataset, batch_size=32, shuffle=True, num_workers=0)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
+
 
     # Model
     pose_encoder = TwoStreamAGCN().to(device)
@@ -78,6 +100,8 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     log_csv = os.path.join(log_dir, "dual_encoder_training_log.csv")
     
     losses = []
+    train_losses = []
+    val_losses = []
     
     # Early stopping parameters
     best_loss = float('inf')
@@ -89,8 +113,8 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
         pose_encoder.train()
         text_encoder.train()
 
-        epoch_loss = 0
-        loop = tqdm(dataloader, desc=f"Epoch {epoch}")
+        train_loss = 0
+        loop = tqdm(train_loader, desc=f"Epoch {epoch} [TRAIN]")
 
         for batch in loop:
             pose_tensor = batch['pose']
@@ -103,61 +127,93 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
             # Compute contrastive loss
             loss = ntxent_loss(z_pose, z_text, temperature=temperature)
 
-            epoch_loss += loss.item()
+            train_loss += loss.item()
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            loop.set_postfix(loss=loss.item())
+            loop.set_postfix(train_loss=loss.item())
 
-        scheduler.step()
-        avg_loss = epoch_loss / len(dataloader)
-        losses.append({"epoch": epoch, "loss": avg_loss})
+        avg_train_loss = train_loss / len(train_loader)
+
+        # 🔍 VALIDAZIONE
+        pose_encoder.eval()
+        text_encoder.eval()
+        val_loss = 0
+        with torch.no_grad():
+            for batch in val_loader:
+                pose_tensor = batch['pose']
+                input_ids = batch['input_ids']
+                attention_mask = batch['attention_mask']
+
+                z_pose = pose_encoder(pose_tensor)
+                z_text = text_encoder(input_ids=input_ids, attention_mask=attention_mask)
+                loss = ntxent_loss(z_pose, z_text, temperature=temperature)
+                val_loss += loss.item()
+
+        avg_val_loss = val_loss / len(val_loader)
+        
+        avg_train_loss = train_loss / len(train_loader)
+        avg_val_loss = val_loss / len(val_loader)
+
+        train_losses.append(avg_train_loss)
+        val_losses.append(avg_val_loss)
+
+        losses.append({
+            "epoch": epoch,
+            "train_loss": avg_train_loss,
+            "val_loss": avg_val_loss
+        })
 
         with open(log_txt, "a") as f:
-            f.write(f"Epoch {epoch}, Loss: {avg_loss:.4f}\n")
+            f.write(f"Epoch {epoch}, Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}\n")
+
         
-        # Early stopping check
-        if avg_loss < best_loss:
-            best_loss = avg_loss
+          # ✅ EARLY STOPPING sulla VAL LOSS
+        if avg_val_loss < best_loss:
+            best_loss = avg_val_loss
             epochs_without_improvement = 0
-            # Salva i migliori pesi quando la loss migliora
-            torch.save(pose_encoder.state_dict(), os.path.join(log_dir, "pose_encoder.pt"))
-            torch.save(text_encoder.state_dict(), os.path.join(log_dir, "text_encoder.pt"))
-            print(f"\n✅ Miglioramento! Loss: {avg_loss:.4f} (migliore: {best_loss:.4f})")
+
+            torch.save(pose_encoder.state_dict(), os.path.join(log_dir, f"pose_encoder_epoch{epoch}.pt"))
+            torch.save(text_encoder.state_dict(), os.path.join(log_dir, f"text_encoder_epoch{epoch}.pt"))
+
+            print(f"\n✅ Miglioramento! Val Loss: {avg_val_loss:.4f} (migliore: {best_loss:.4f})")
         else:
             epochs_without_improvement += 1
-            print(f"\n⚠️  Nessun miglioramento per {epochs_without_improvement} epoche. Loss: {avg_loss:.4f} (migliore: {best_loss:.4f})")
-        
-        # Early stopping: ferma se non c'è miglioramento per 'patience' epoche
+            print(f"\n⚠️ Nessun miglioramento per {epochs_without_improvement} epoche. Val Loss: {avg_val_loss:.4f} (migliore: {best_loss:.4f})")
+
         if epochs_without_improvement >= patience:
             print(f"\n🛑 Early stopping attivato dopo {epoch} epoche (nessun miglioramento per {patience} epoche consecutive).")
             break
 
+        # Plot Loss
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(1, len(train_losses) + 1), train_losses, label='Train Loss')
+        plt.plot(range(1, len(val_losses) + 1), val_losses, label='Validation Loss')
+        plt.xlabel('Epoch')
+        plt.ylabel('Loss')
+        plt.title('Train vs Validation Loss')
+        plt.legend()
+        plt.grid(True)
+        plt.tight_layout()
+
+        # Mostra
+        plt.show()
+
+        scheduler.step()
+
     # Save CSV
-    df = pd.DataFrame(losses)
+    df = pd.DataFrame({
+        "epoch": list(range(1, len(train_losses)+1)),
+        "train_loss": train_losses,
+        "val_loss": val_losses
+    })
     df.to_csv(log_csv, index=False)
 
-    # Validation su un batch
-    pose_encoder.eval()
-    text_encoder.eval()
-
-    with torch.no_grad():
-        sample_batch = next(iter(dataloader))
-        pose_tensor = sample_batch['pose'].to(device)
-        input_ids = sample_batch['input_ids'].to(device)
-        attention_mask = sample_batch['attention_mask'].to(device)
-
-        z_pose = pose_encoder(pose_tensor)
-        z_text = text_encoder(input_ids=input_ids, attention_mask=attention_mask)
-
-        val_loss = ntxent_loss(z_pose, z_text, temperature=temperature).item()
-
-        print(f"\n🔍 Loss di validazione su batch casuale: {val_loss:.4f}")
 
     # I pesi migliori sono già stati salvati durante il training quando la loss migliorava
-    print(f"\n✅ Training completato. Miglior loss: {best_loss:.4f} all'epoca {epoch - epochs_without_improvement}")
+    print(f"\n✅ Training completato. Miglior Val Loss: {best_loss:.4f} all'epoca {epoch - epochs_without_improvement}")
 
 
 if __name__ == "__main__":
