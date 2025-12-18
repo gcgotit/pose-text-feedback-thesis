@@ -31,7 +31,10 @@ from sklearn.metrics import pairwise_distances
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
-
+from torch.utils.data import Subset
+from sklearn.preprocessing import normalize
+from sklearn.manifold import TSNE
+from mpl_toolkits.mplot3d import Axes3D
 
 # 1. Caricamento del dataset FLAG3D (val split)
 data_dir = project_root / "data" / "FLAG3D"
@@ -41,19 +44,33 @@ with open(data_dir / "flag3d_annotations.json", "r") as f:
 with open(data_dir / "flag3d_keypoint.pkl", "rb") as f:
     keypoints_data = pickle.load(f)
 
-# Filtra il validation set (supponendo che metadata_df abbia colonna 'split')
-val_df = metadata_df[metadata_df['split'] == 'val'].reset_index(drop=True)
-val_dataset = FLAG3DDataset(metadata_df=val_df, 
-                            annotations_dict=annotations, 
-                            keypoints_data=keypoints_data, 
-                            device='cpu')  # usa 'cuda' se disponibile
+
+# Caricamento degli indici del val split
+with open(data_dir / "flag3d_split.json") as f:
+    split = json.load(f)
+val_indices = split["val_indices"]
+
+full_dataset = FLAG3DDataset(metadata_df=metadata_df,
+                             annotations_dict=annotations,
+                             keypoints_data=keypoints_data,
+                             device='cpu')
+
+val_dataset = Subset(full_dataset, val_indices)
 
 # 2. Caricamento dei modelli e pesi addestrati
 pose_encoder = TwoStreamAGCN()
 text_encoder = DistilBERTTextEncoder()
 log_dir = project_root / "logs"
-pose_encoder.load_state_dict(torch.load(log_dir / "pose_encoder.pt", map_location='cpu'))
-text_encoder.load_state_dict(torch.load(log_dir / "text_encoder.pt", map_location='cpu'))
+
+# Carica il numero dell’epoca migliore
+with open(log_dir / "best_epoch.txt") as f:
+    best_epoch = int(f.read().strip())
+
+# Carica i pesi migliori
+pose_encoder.load_state_dict(torch.load(log_dir / f"pose_encoder_epoch{best_epoch}.pt", map_location='cpu'))
+text_encoder.load_state_dict(torch.load(log_dir / f"text_encoder_epoch{best_epoch}.pt", map_location='cpu'))
+
+# Setta i modelli in eval mode
 pose_encoder.eval(); text_encoder.eval();
 
 # 3. Estrazione delle embedding
@@ -150,8 +167,11 @@ t-SNE (t-distributed Stochastic Neighbor Embedding): proietta i dati in 2D cerca
 spesso formando cluster di punti simili. È ottimo per visualizzare cluster non-lineari di embedding.
 
 '''
+
 # Combina pose e testo embedding per visualizzarli insieme
 X = np.concatenate([all_pose_embeds, all_text_embeds], axis=0)
+X = normalize(X, norm='l2')  # normalizzazione globale
+
 y = np.concatenate([all_labels, all_labels], axis=0)  # le label rimangono le stesse per le coppie
 modality = np.array([0]*len(all_pose_embeds) + [1]*len(all_text_embeds)) 
 # 'modality' potrà aiutarci a distinguere (es. 0 = pose, 1 = testo) se vogliamo marker diversi
@@ -170,6 +190,24 @@ for class_id in np.unique(y):
                 label=f"Azione {class_id} (testo)", marker='^', s=10)
 plt.title("t-SNE delle embedding latenti (ogni azione in un colore)")
 plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
+plt.show()
+
+# t-SNE 3D
+X_3d = TSNE(n_components=3, perplexity=30, random_state=42, init='pca').fit_transform(X)
+
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+
+for class_id in np.unique(y):
+    idx = (y == class_id)
+    ax.scatter(X_3d[idx & (modality==0), 0], X_3d[idx & (modality==0), 1], X_3d[idx & (modality==0), 2],
+               label=f"Azione {class_id} (pose)", marker='o', s=10)
+    ax.scatter(X_3d[idx & (modality==1), 0], X_3d[idx & (modality==1), 1], X_3d[idx & (modality==1), 2],
+               label=f"Azione {class_id} (text)", marker='^', s=10)
+
+ax.set_title("t-SNE 3D space (pose + text)")
+ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 plt.tight_layout()
 plt.show()
 

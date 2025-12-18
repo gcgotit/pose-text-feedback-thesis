@@ -174,9 +174,12 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
         if avg_val_loss < best_loss:
             best_loss = avg_val_loss
             epochs_without_improvement = 0
-
             torch.save(pose_encoder.state_dict(), os.path.join(log_dir, f"pose_encoder_epoch{epoch}.pt"))
             torch.save(text_encoder.state_dict(), os.path.join(log_dir, f"text_encoder_epoch{epoch}.pt"))
+            
+            # Salva il numero dell'epoca migliore
+            with open(os.path.join(log_dir, "best_epoch.txt"), "w") as f:
+                f.write(str(epoch))
 
             print(f"\n✅ Miglioramento! Val Loss: {avg_val_loss:.4f} (migliore: {best_loss:.4f})")
         else:
@@ -187,20 +190,7 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
             print(f"\n🛑 Early stopping attivato dopo {epoch} epoche (nessun miglioramento per {patience} epoche consecutive).")
             break
 
-        # Plot Loss
-        plt.figure(figsize=(10, 6))
-        plt.plot(range(1, len(train_losses) + 1), train_losses, label='Train Loss')
-        plt.plot(range(1, len(val_losses) + 1), val_losses, label='Validation Loss')
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Train vs Validation Loss')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-
-        # Mostra
-        plt.show()
-
+       
         scheduler.step()
 
     # Save CSV
@@ -211,10 +201,25 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     })
     df.to_csv(log_csv, index=False)
 
+    
+    # Plot Loss
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(1, len(train_losses) + 1), train_losses, label='Train Loss')
+    plt.plot(range(1, len(val_losses) + 1), val_losses, label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Train vs Validation Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    # Salva e mostra il grafico
+    plt.savefig(os.path.join(log_dir, f"train_val_loss_plot_epoch{epoch}.png"))
+    plt.show()
 
     # I pesi migliori sono già stati salvati durante il training quando la loss migliorava
     print(f"\n✅ Training completato. Miglior Val Loss: {best_loss:.4f} all'epoca {epoch - epochs_without_improvement}")
 
 
 if __name__ == "__main__":
-    train_dual_encoder(temperature=0.07, patience=5)
+    train_dual_encoder(temperature=0.075, patience=5)
