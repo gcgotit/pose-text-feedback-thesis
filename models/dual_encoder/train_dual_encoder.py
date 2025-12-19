@@ -34,6 +34,13 @@ from utils import ntxent_loss  # contrastive loss
 import json
 import pickle
 import matplotlib.pyplot as plt
+from utils import GradNormLossWrapper
+
+# Disabilita Flash SDP per forzare il backend a usare l’implementazione classica (compatibile con backward usando GradNorm loss):
+torch.backends.cuda.enable_flash_sdp(False)
+torch.backends.cuda.enable_math_sdp(True)
+torch.backends.cuda.enable_mem_efficient_sdp(False)
+
 
 # Percorso alla directory dei dati
 data_dir = project_root / "data" / "FLAG3D"
@@ -56,6 +63,7 @@ val_indices = split["val_indices"]
 
 
 def count_parameters(model):
+    # Stampa il numero di parametri trainabili
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 def compute_grad_stats(model):
@@ -93,7 +101,20 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
     # Model
     pose_encoder = TwoStreamAGCN().to(device)
-    text_encoder = DistilBERTTextEncoder().to(device)
+    text_encoder = DistilBERTTextEncoder(freeze_layers=True, use_adapter=True).to(device)
+    
+    # Calcolo delle prime due loss per inizializzare GradNorm
+    pose_encoder.eval()
+    text_encoder.eval()
+    with torch.no_grad():
+        batch = next(iter(train_loader))
+        z_pose = pose_encoder(batch['pose'])
+        z_text = text_encoder(
+            input_ids=batch['input_ids'],
+            attention_mask=batch['attention_mask']
+        )
+        initial_loss1 = ntxent_loss(z_pose, z_text, temperature=temperature).item()
+        initial_loss2 = ntxent_loss(z_text, z_pose, temperature=temperature).item()
 
     # Conteggio parametri
     pose_params = count_parameters(pose_encoder)
@@ -103,10 +124,28 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     print(f"📚 Text encoder: {text_params:,} parametri")
     print(f"🔢 Totale: {total_params:,} parametri\n")
 
-    # Optimizer
+    # Parametri da ottimizzare
     params = list(pose_encoder.parameters()) + list(text_encoder.parameters())
+
+    # Pesi delle due loss (pose2text e text2pose)
+    task_weights = torch.nn.Parameter(torch.ones(2, requires_grad=True, device=device))
+
+    # Aggiungere i pesi all’ottimizzatore
+    params += [task_weights]
+
+    # Optimizer
     optimizer = optim.AdamW(params, lr=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+
+
+    # Istanza GradNorm
+    initial_losses = [initial_loss1, initial_loss2]
+    gradnorm = GradNormLossWrapper(
+        loss_fns=[ntxent_loss, ntxent_loss],
+        initial_losses=initial_losses,
+        alpha=1.5,
+        device=device
+    )
 
     # Logs
     log_dir = "logs"
@@ -140,13 +179,24 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
             z_pose = pose_encoder(pose_tensor)
             z_text = text_encoder(input_ids=input_ids, attention_mask=attention_mask)
             
-            # Compute contrastive loss
-            loss = ntxent_loss(z_pose, z_text, temperature=temperature)
+            # Due loss separate (pose2text e text2pose)
+            loss1 = ntxent_loss(z_pose, z_text, temperature=temperature)
+            loss2 = ntxent_loss(z_text, z_pose, temperature=temperature)
+
+            # Calcola la loss bilanciata con GradNorm
+            loss, task_losses, gradnorm_penalty = gradnorm.compute_loss(
+                model=None,  
+                shared_params=list(pose_encoder.parameters()) + list(text_encoder.parameters()),
+                inputs=[z_pose, z_text],
+                targets=[z_text, z_pose]
+            )
+
 
             train_loss += loss.item()
 
             optimizer.zero_grad()
             loss.backward()
+
 
             pose_grad_stats = compute_grad_stats(pose_encoder)
             text_grad_stats = compute_grad_stats(text_encoder)
