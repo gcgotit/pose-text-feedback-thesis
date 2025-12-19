@@ -11,6 +11,8 @@ dell’esercizio (nome, descrizione, punti chiave, errori comuni, ecc.). Utilizz
 prestazioni.
 '''
 
+# fixare e mettere dataloader !!
+
 import torch
 import pandas as pd
 import numpy as np

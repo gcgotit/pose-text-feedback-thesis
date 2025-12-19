@@ -19,6 +19,7 @@ import pandas as pd
 import os
 import sys
 from pathlib import Path
+import numpy as np
 
 # Aggiunge la root del progetto al PYTHONPATH
 project_root = Path(__file__).parent.parent.parent
@@ -56,6 +57,20 @@ val_indices = split["val_indices"]
 
 def count_parameters(model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+def compute_grad_stats(model):
+    grad_norms = []
+    for p in model.parameters():
+        if p.grad is not None:
+            grad_norms.append(p.grad.data.norm(2).item())
+    if grad_norms:
+        return {
+            "mean": np.mean(grad_norms),
+            "std": np.std(grad_norms),
+            "max": np.max(grad_norms)
+        }
+    else:
+        return {"mean": 0.0, "std": 0.0, "max": 0.0}
 
 def train_dual_encoder(temperature, patience=5, device="cuda"):
     # Device selection (GPU or CPU) with fallback to CPU
@@ -102,7 +117,8 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     losses = []
     train_losses = []
     val_losses = []
-    
+    grad_stats = []
+
     # Early stopping parameters
     best_loss = float('inf')
     epochs_without_improvement = 0
@@ -131,6 +147,21 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
             optimizer.zero_grad()
             loss.backward()
+
+            pose_grad_stats = compute_grad_stats(pose_encoder)
+            text_grad_stats = compute_grad_stats(text_encoder)
+
+            # Logging per epoca
+            grad_stats.append({
+                "epoch": epoch,
+                "pose_grad_mean": pose_grad_stats["mean"],
+                "pose_grad_std": pose_grad_stats["std"],
+                "pose_grad_max": pose_grad_stats["max"],
+                "text_grad_mean": text_grad_stats["mean"],
+                "text_grad_std": text_grad_stats["std"],
+                "text_grad_max": text_grad_stats["max"],
+            })
+
             optimizer.step()
             
             loop.set_postfix(train_loss=loss.item())
@@ -201,7 +232,10 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     })
     df.to_csv(log_csv, index=False)
 
-    
+    # Save grad stats
+    df_grad_stats = pd.DataFrame(grad_stats)
+    df_grad_stats.to_csv(os.path.join(log_dir, "grad_stats.csv"), index=False)
+
     # Plot Loss
     plt.figure(figsize=(10, 6))
     plt.plot(range(1, len(train_losses) + 1), train_losses, label='Train Loss')
