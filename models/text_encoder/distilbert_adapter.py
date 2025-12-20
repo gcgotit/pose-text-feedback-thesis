@@ -3,21 +3,27 @@ import torch.nn as nn
 from transformers import DistilBertModel
 
 class AdapterLayer(nn.Module):
-    """Adapter con collo di bottiglia: Linear -> ReLU -> Linear"""
-    def __init__(self, hidden_size, bottleneck_dim=32):
+    """Adapter con collo di bottiglia + residual + LayerNorm"""
+    def __init__(self, hidden_size, bottleneck_dim=64):
         super().__init__()
         self.down_project = nn.Linear(hidden_size, bottleneck_dim)
         self.activation = nn.ReLU()
         self.up_project = nn.Linear(bottleneck_dim, hidden_size)
+        self.layer_norm = nn.LayerNorm(hidden_size)
 
     def forward(self, x):
-        return self.up_project(self.activation(self.down_project(x)))
+        adapted = self.up_project(self.activation(self.down_project(x)))
+        return self.layer_norm(x + adapted)  # Residual connection + LayerNorm
 
 class DistilBERTTextEncoder(nn.Module):
     def __init__(self, pretrained_model='distilbert-base-uncased', output_dim=128, freeze_layers=True, use_adapter=True):        
         super().__init__()
         self.encoder = DistilBertModel.from_pretrained(pretrained_model)
-        self.projection = nn.Linear(self.encoder.config.hidden_size, output_dim)
+        self.projection = nn.Sequential(
+            nn.Linear(self.encoder.config.hidden_size, self.encoder.config.hidden_size),
+            nn.ReLU(),
+            nn.Linear(self.encoder.config.hidden_size, output_dim)
+        )        
         self.use_adapter = use_adapter
 
         if self.use_adapter:

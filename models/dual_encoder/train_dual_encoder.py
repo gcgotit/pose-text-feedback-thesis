@@ -162,14 +162,21 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     best_loss = float('inf')
     epochs_without_improvement = 0
     max_epochs = 100  # Numero massimo di epoche (early stopping fermerà prima se necessario)
+    # 🔥 SCHEDULAZIONE TEMPERATURA (decadimento esponenziale)
+    tau_start = temperature       # ad esempio 0.2
+    gamma = 0.95                  # fattore di decadimento
 
     # Training
     for epoch in range(1, max_epochs + 1):
+        
+        # 🔁 Aggiorna temperatura in modo esponenziale
+        current_tau = tau_start * (gamma ** (epoch - 1))
+
         pose_encoder.train()
         text_encoder.train()
 
         train_loss = 0
-        loop = tqdm(train_loader, desc=f"Epoch {epoch} [TRAIN]")
+        loop = tqdm(train_loader, desc=f"Epoch {epoch} [TRAIN] (τ={current_tau:.4f})")
 
         for batch in loop:
             pose_tensor = batch['pose']
@@ -180,8 +187,8 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
             z_text = text_encoder(input_ids=input_ids, attention_mask=attention_mask)
             
             # Due loss separate (pose2text e text2pose)
-            loss1 = ntxent_loss(z_pose, z_text, temperature=temperature)
-            loss2 = ntxent_loss(z_text, z_pose, temperature=temperature)
+            loss1 = ntxent_loss(z_pose, z_text, temperature=current_tau)
+            loss2 = ntxent_loss(z_text, z_pose, temperature=current_tau)
 
             # Calcola la loss bilanciata con GradNorm
             loss, task_losses, gradnorm_penalty = gradnorm.compute_loss(
@@ -230,7 +237,7 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
                 z_pose = pose_encoder(pose_tensor)
                 z_text = text_encoder(input_ids=input_ids, attention_mask=attention_mask)
-                loss = ntxent_loss(z_pose, z_text, temperature=temperature)
+                loss = ntxent_loss(z_pose, z_text, temperature=current_tau)
                 val_loss += loss.item()
 
         avg_val_loss = val_loss / len(val_loader)
