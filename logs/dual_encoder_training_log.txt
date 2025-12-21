@@ -188,3 +188,12 @@ Epoch 9, Train Loss: 3.9114, Val Loss: 4.0373
 Epoch 10, Train Loss: 3.8869, Val Loss: 4.4998
 Epoch 11, Train Loss: 3.8896, Val Loss: 4.4899
 Epoch 12, Train Loss: 3.8715, Val Loss: 4.8957
+Epoch 1, Grad Norm Train Loss: 3.7521, Contrastive Train Loss: 1.6003, Contrastive Val Loss: 3.4307
+Epoch 1, Grad Norm Train Loss: 3.7901, Contrastive Train Loss: 1.6832, Contrastive Val Loss: 3.4178
+Epoch 2, Grad Norm Train Loss: 3.1522, Contrastive Train Loss: 0.8987, Contrastive Val Loss: 3.1729
+Epoch 3, Grad Norm Train Loss: 2.9230, Contrastive Train Loss: 0.5947, Contrastive Val Loss: 2.1661
+Epoch 4, Grad Norm Train Loss: 2.8221, Contrastive Train Loss: 0.4545, Contrastive Val Loss: 3.0971
+Epoch 5, Grad Norm Train Loss: 2.7574, Contrastive Train Loss: 0.3743, Contrastive Val Loss: 4.1060
+Epoch 6, Grad Norm Train Loss: 2.7299, Contrastive Train Loss: 0.3535, Contrastive Val Loss: 3.3983
+Epoch 7, Grad Norm Train Loss: 2.6895, Contrastive Train Loss: 0.3016, Contrastive Val Loss: 3.8692
+Epoch 8, Grad Norm Train Loss: 2.6746, Contrastive Train Loss: 0.2979, Contrastive Val Loss: 3.8985

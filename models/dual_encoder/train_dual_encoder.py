@@ -95,8 +95,8 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     train_dataset = Subset(full_dataset, train_indices)
     val_dataset = Subset(full_dataset, val_indices)
 
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=0)
 
 
     # Model
@@ -154,6 +154,7 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     log_csv = os.path.join(log_dir, "dual_encoder_training_log.csv")
     
     losses = []
+    contrastive_train_losses = []
     train_losses = []
     val_losses = []
     grad_stats = []
@@ -176,6 +177,8 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
         text_encoder.train()
 
         train_loss = 0
+        contrastive_train_loss = 0
+        num_batches = 0
         loop = tqdm(train_loader, desc=f"Epoch {epoch} [TRAIN] (τ={current_tau:.4f})")
 
         for batch in loop:
@@ -200,7 +203,18 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
 
             train_loss += loss.item()
+            contrastive_train_loss += loss1.item()
+            num_batches += 1
 
+            # Aggiorna il postfix con le medie correnti durante il training
+            avg_train_loss_current = train_loss / num_batches
+            avg_contrastive_train_loss_current = contrastive_train_loss / num_batches
+            
+            loop.set_postfix(
+                train_loss=f"{avg_train_loss_current:.4f}",
+                contrastive_train_loss=f"{avg_contrastive_train_loss_current:.4f}"
+            )
+            
             optimizer.zero_grad()
             loss.backward()
 
@@ -221,9 +235,8 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
             optimizer.step()
             
-            loop.set_postfix(train_loss=loss.item())
-
         avg_train_loss = train_loss / len(train_loader)
+        avg_contrastive_train_loss = contrastive_train_loss / len(train_loader)
 
         # 🔍 VALIDAZIONE
         pose_encoder.eval()
@@ -247,15 +260,17 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
         train_losses.append(avg_train_loss)
         val_losses.append(avg_val_loss)
+        contrastive_train_losses.append(avg_contrastive_train_loss)
 
         losses.append({
             "epoch": epoch,
             "train_loss": avg_train_loss,
+            "contrastive_train_loss": avg_contrastive_train_loss,
             "val_loss": avg_val_loss
         })
 
         with open(log_txt, "a") as f:
-            f.write(f"Epoch {epoch}, Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}\n")
+            f.write(f"Epoch {epoch}, Grad Norm Train Loss: {avg_train_loss:.4f}, Contrastive Train Loss: {avg_contrastive_train_loss:.4f}, Contrastive Val Loss: {avg_val_loss:.4f}\n")
 
         
           # ✅ EARLY STOPPING sulla VAL LOSS
