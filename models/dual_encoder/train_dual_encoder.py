@@ -154,7 +154,7 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
     # Optimizer
     optimizer = optim.AdamW(params, lr=1e-4)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 
     '''
     # Istanza GradNorm
