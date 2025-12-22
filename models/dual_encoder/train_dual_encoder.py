@@ -36,11 +36,12 @@ import pickle
 import matplotlib.pyplot as plt
 from utils import GradNormLossWrapper
 
+'''
 # Disabilita Flash SDP per forzare il backend a usare l’implementazione classica (compatibile con backward usando GradNorm loss):
 torch.backends.cuda.enable_flash_sdp(False)
 torch.backends.cuda.enable_math_sdp(True)
 torch.backends.cuda.enable_mem_efficient_sdp(False)
-
+'''
 
 # Percorso alla directory dei dati
 data_dir = project_root / "data" / "FLAG3D"
@@ -84,25 +85,40 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     # Device selection (GPU or CPU) with fallback to CPU
     device = torch.device(device if torch.cuda.is_available() else "cpu")
 
-    # Costruisci il dataset                                                                                                  
-    full_dataset = FLAG3DDataset(
-    metadata_df=metadata_df,
-    annotations_dict=annotations_dict,
-    keypoints_data=keypoints_data,
-    device=device
-)
-    # Split dataset in train and val
-    train_dataset = Subset(full_dataset, train_indices)
-    val_dataset = Subset(full_dataset, val_indices)
+    # Dataset con augmentation per il training
+    train_full_dataset = FLAG3DDataset(
+        metadata_df=metadata_df,
+        annotations_dict=annotations_dict,
+        keypoints_data=keypoints_data,
+        device=device
+        #augment=False,  # ✅ Abilita augmentation qui
+        #augment_prob=0.5
+    )
 
-    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False, num_workers=0)
+    # Dataset senza augmentation per la validation
+    val_full_dataset = FLAG3DDataset(
+        metadata_df=metadata_df,
+        annotations_dict=annotations_dict,
+        keypoints_data=keypoints_data,
+        device=device
+        #augment=False,  # ❌ Nessuna augmentation
+        #augment_prob=0.0
+    )
+
+    # Applica split
+    train_dataset = Subset(train_full_dataset, train_indices)
+    val_dataset = Subset(val_full_dataset, val_indices)
+
+
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=0)
 
 
     # Model
     pose_encoder = TwoStreamAGCN().to(device)
     text_encoder = DistilBERTTextEncoder(freeze_layers=True, use_adapter=True).to(device)
     
+    '''
     # Calcolo delle prime due loss per inizializzare GradNorm
     pose_encoder.eval()
     text_encoder.eval()
@@ -113,8 +129,9 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
             input_ids=batch['input_ids'],
             attention_mask=batch['attention_mask']
         )
-        initial_loss1 = ntxent_loss(z_pose, z_text, temperature=temperature).item()
-        initial_loss2 = ntxent_loss(z_text, z_pose, temperature=temperature).item()
+        #initial_loss1 = ntxent_loss(z_pose, z_text, temperature=temperature).item()
+        #initial_loss2 = ntxent_loss(z_text, z_pose, temperature=temperature).item()
+    '''
 
     # Conteggio parametri
     pose_params = count_parameters(pose_encoder)
@@ -127,17 +144,19 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     # Parametri da ottimizzare
     params = list(pose_encoder.parameters()) + list(text_encoder.parameters())
 
+    '''
     # Pesi delle due loss (pose2text e text2pose)
     task_weights = torch.nn.Parameter(torch.ones(2, requires_grad=True, device=device))
 
     # Aggiungere i pesi all’ottimizzatore
     params += [task_weights]
+    '''
 
     # Optimizer
     optimizer = optim.AdamW(params, lr=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
-
+    '''
     # Istanza GradNorm
     initial_losses = [initial_loss1, initial_loss2]
     gradnorm = GradNormLossWrapper(
@@ -146,7 +165,7 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
         alpha=1.5,
         device=device
     )
-
+    '''
     # Logs
     log_dir = "logs"
     os.makedirs(log_dir, exist_ok=True)
@@ -171,7 +190,8 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
     for epoch in range(1, max_epochs + 1):
         
         # 🔁 Aggiorna temperatura in modo esponenziale
-        current_tau = tau_start * (gamma ** (epoch - 1))
+        #current_tau = tau_start * (gamma ** (epoch - 1))
+        current_tau = temperature
 
         pose_encoder.train()
         text_encoder.train()
@@ -191,32 +211,33 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
             
             # Due loss separate (pose2text e text2pose)
             loss1 = ntxent_loss(z_pose, z_text, temperature=current_tau)
-            loss2 = ntxent_loss(z_text, z_pose, temperature=current_tau)
+            #loss2 = ntxent_loss(z_text, z_pose, temperature=current_tau)
 
             # Calcola la loss bilanciata con GradNorm
+            '''
             loss, task_losses, gradnorm_penalty = gradnorm.compute_loss(
                 model=None,  
                 shared_params=list(pose_encoder.parameters()) + list(text_encoder.parameters()),
                 inputs=[z_pose, z_text],
                 targets=[z_text, z_pose]
-            )
+            )'''
+            #loss = (loss1 + loss2) / 2
 
 
-            train_loss += loss.item()
-            contrastive_train_loss += loss1.item()
+
+            train_loss += loss1.item() #per loggare la loss
+            
             num_batches += 1
 
             # Aggiorna il postfix con le medie correnti durante il training
             avg_train_loss_current = train_loss / num_batches
-            avg_contrastive_train_loss_current = contrastive_train_loss / num_batches
+
             
             loop.set_postfix(
-                train_loss=f"{avg_train_loss_current:.4f}",
-                contrastive_train_loss=f"{avg_contrastive_train_loss_current:.4f}"
-            )
+                train_loss=f"{avg_train_loss_current:.4f}")
             
             optimizer.zero_grad()
-            loss.backward()
+            loss1.backward()
 
 
             pose_grad_stats = compute_grad_stats(pose_encoder)
@@ -236,7 +257,7 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
             optimizer.step()
             
         avg_train_loss = train_loss / len(train_loader)
-        avg_contrastive_train_loss = contrastive_train_loss / len(train_loader)
+        #avg_contrastive_train_loss = contrastive_train_loss / len(train_loader)
 
         # 🔍 VALIDAZIONE
         pose_encoder.eval()
@@ -250,8 +271,10 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
                 z_pose = pose_encoder(pose_tensor)
                 z_text = text_encoder(input_ids=input_ids, attention_mask=attention_mask)
-                loss = ntxent_loss(z_pose, z_text, temperature=current_tau)
-                val_loss += loss.item()
+                loss1 = ntxent_loss(z_pose, z_text, temperature=current_tau)
+                #loss2 = ntxent_loss(z_text, z_pose, temperature=current_tau)
+                #loss = (loss1 + loss2) / 2
+                val_loss += loss1.item()
 
         avg_val_loss = val_loss / len(val_loader)
         
@@ -260,17 +283,15 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
         train_losses.append(avg_train_loss)
         val_losses.append(avg_val_loss)
-        contrastive_train_losses.append(avg_contrastive_train_loss)
 
         losses.append({
             "epoch": epoch,
             "train_loss": avg_train_loss,
-            "contrastive_train_loss": avg_contrastive_train_loss,
             "val_loss": avg_val_loss
         })
 
         with open(log_txt, "a") as f:
-            f.write(f"Epoch {epoch}, Grad Norm Train Loss: {avg_train_loss:.4f}, Contrastive Train Loss: {avg_contrastive_train_loss:.4f}, Contrastive Val Loss: {avg_val_loss:.4f}\n")
+            f.write(f"Epoch {epoch}, Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}\n")
 
         
           # ✅ EARLY STOPPING sulla VAL LOSS
@@ -328,4 +349,4 @@ def train_dual_encoder(temperature, patience=5, device="cuda"):
 
 
 if __name__ == "__main__":
-    train_dual_encoder(temperature=0.075, patience=5)
+    train_dual_encoder(temperature=0.07, patience=5)
