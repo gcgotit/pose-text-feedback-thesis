@@ -3,7 +3,31 @@
 venv311/
 
 # Dati grezzi (non versionare i dataset)
-data/
+#togli dal gitignore i file flag3d_dataset.py e flag3d__dataset_aug.py e il file pose_augmentation.py
+#NON DEVONO ESSERE VERSIONATI
+
+data/EC3D/
+data/FLAG3D/__pycache__
+data/FLAG3D/annotations
+data/FLAG3D/keypoints
+data/FLAG3D/metadata.csv
+data/FLAG3D/split.json
+data/FLAG3D/flag3d_annotations.json
+data/FLAG3D/flag3d_keypoint.pkl
+data/FLAG3D/flag3d_metadata.csv
+data/FLAG3D/flag3d_split.json
+data/FLAG3D/flag3d_label_names.json
+data/FLAG3D/FLAG3D Instruction.txt
+data/FLAG3D/skeleton_action01.gif
+
+# Dati augmentati FLAG3D (generati da augment_and_save_FLAG3D.py)
+data/FLAG3D/flag3d_keypoint_augmented.pkl
+data/FLAG3D/flag3d_metadata_augmented.csv
+data/FLAG3D/flag3d_annotations_augmented.json
+data/FLAG3D/flag3d_split_augmented.json
+data/FLAG3D/flag3d_split_combined.json
+
+
 
 # Risultati e output temporanei
 results/
@@ -17,3 +41,4 @@ logs/
 
 # File di sistema macOS
 .DS_Store
+
