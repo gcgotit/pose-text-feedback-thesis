@@ -1,0 +1,64 @@
+,precision,recall,f1-score,support,action_name
+0,1.0,1.0,1.0,10.0,Svend Press
+1,1.0,1.0,1.0,11.0,Kneeling Push-ups
+2,1.0,1.0,1.0,11.0,Standing Straight-arm Chest Press With Resistance Band
+3,1.0,1.0,1.0,11.0,Small Dumbbell Floor Flies
+4,1.0,1.0,1.0,11.0,Chest Fly
+5,1.0,0.9,0.9473684210526315,10.0,Push-ups
+6,1.0,1.0,1.0,11.0,Bent-over W-shape Stretch
+7,1.0,1.0,1.0,11.0,Bent-over Y-shape Stretch
+8,1.0,1.0,1.0,11.0,Bent-over A-shape Stretch
+9,1.0,1.0,1.0,11.0,Squat With Arm Lift
+10,1.0,1.0,1.0,11.0,Breaststroke Arm Pull
+11,1.0,1.0,1.0,11.0,Prone Y-shape Stretch
+12,1.0,1.0,1.0,10.0,Lateral Raise Forward Circles
+13,1.0,1.0,1.0,10.0,Lateral Raise Backward Circles
+14,0.7857142857142857,1.0,0.88,11.0,Lying Shoulder Joint Upward Round
+15,1.0,0.7272727272727273,0.8421052631578947,11.0,Lying Shoulder Joint Downward Round
+16,1.0,1.0,1.0,11.0,Bare-handed Full Lateral Raise
+17,1.0,1.0,1.0,11.0,Bare-handed Cuban Press
+18,1.0,1.0,1.0,11.0,Fortune Cat
+19,1.0,1.0,1.0,11.0,Dumbbell Curls
+20,1.0,1.0,1.0,11.0,Alternate Dumbbell Curls
+21,1.0,1.0,1.0,11.0,Right-side Kettlebell Bent-over Row
+22,1.0,1.0,1.0,11.0,Wrist Joint Warm-up
+23,1.0,1.0,1.0,11.0,Right-side Bent-over Tricep Extension With Resistance Band
+24,0.7857142857142857,1.0,0.88,11.0,Bent-over Dumbbell Tricep Extension
+25,1.0,1.0,1.0,11.0,Nod And Raise Head
+26,0.5,0.36363636363636365,0.42105263157894735,11.0,Two-way Head Turn
+27,1.0,0.8181818181818182,0.9,11.0,Shrug And Sink The Shoulders
+28,0.4375,0.6363636363636364,0.5185185185185185,11.0,Four-way Nod Head
+29,1.0,1.0,1.0,11.0,Lying Alternate Upper-half Leg Raise
+30,1.0,1.0,1.0,11.0,Half Roll Back
+31,1.0,1.0,1.0,11.0,Kneeling Right-side Torso Twist
+32,1.0,1.0,1.0,11.0,Left-side Knee Raise And Abdominal Muscles Contract
+33,1.0,1.0,1.0,10.0,Kneeling Right Leg Backward Stretch
+34,1.0,0.7272727272727273,0.8421052631578947,11.0,Kneeling Right Arm Raise
+35,1.0,0.8181818181818182,0.9,11.0,Shoulder Bridge
+36,0.9090909090909091,1.0,0.9523809523809523,10.0,Prone Press-ups
+37,0.8461538461538461,1.0,0.9166666666666666,11.0,Bent-over Torso Rotation
+38,1.0,1.0,1.0,11.0,Lying Arm Pull
+39,0.9090909090909091,0.9090909090909091,0.9090909090909091,11.0,Prone Press Up With Torso Rotation
+40,1.0,1.0,1.0,11.0,Breaststroke Push-ups
+41,1.0,1.0,1.0,11.0,Sit-ups
+42,1.0,1.0,1.0,11.0,Side-lying Left Leg Forward Raise
+43,1.0,1.0,1.0,11.0,Right Leg Reverse Lunge
+44,1.0,1.0,1.0,11.0,Kneeling Left Knee Lift
+45,1.0,1.0,1.0,10.0,Alternate Reverse Lunge
+46,1.0,1.0,1.0,10.0,Side-lying Right Leg Backward Kick
+47,1.0,1.0,1.0,11.0,Left Leg Lunge With Knee Lift
+48,1.0,1.0,1.0,10.0,Sumo Squat
+49,1.0,1.0,1.0,11.0,Straight Leg Calf Raise
+50,1.0,1.0,1.0,10.0,Squat Jump
+51,1.0,1.0,1.0,11.0,Squat With Alternate Knee Lift
+52,1.0,1.0,1.0,11.0,Standing Alternate Butt Kick
+53,1.0,1.0,1.0,11.0,Knee Warm-up
+54,1.0,1.0,1.0,10.0,Butt Kicks
+55,1.0,1.0,1.0,11.0,Jump Left and Right
+56,1.0,1.0,1.0,11.0,Jumping Jacks
+57,1.0,1.0,1.0,10.0,High Knee
+58,1.0,1.0,1.0,11.0,Clap Jacks
+59,1.0,1.0,1.0,11.0,Run In Place With Arm Swing
+accuracy,0.9645061728395061,0.9645061728395061,0.9645061728395061,0.9645061728395061,accuracy
+macro avg,0.969554403929404,0.965,0.9651548104267403,648.0,macro avg
+weighted avg,0.9691308884017216,0.9645061728395061,0.9646642368953935,648.0,weighted avg

@@ -1,0 +1,54 @@
+{
+  "retrieval_text2pose": {
+    "recall_at_1": 0.027777777777777776,
+    "recall_at_5": 0.13842592592592592,
+    "recall_at_10": 0.27361111111111114,
+    "mAP": 0.11456354691931762,
+    "mean_rank": 29.87361111111111,
+    "median_rank": 19.0,
+    "n_samples": 2160,
+    "n_errors": 2100
+  },
+  "retrieval_pose2text": {
+    "recall_at_1": 0.024537037037037038,
+    "recall_at_5": 0.14074074074074075,
+    "recall_at_10": 0.27870370370370373,
+    "mAP": 0.11255595228777171,
+    "mean_rank": 29.820833333333333,
+    "median_rank": 19.0
+  },
+  "retrieval_asymmetry": {
+    "delta_recall_at_1": 0.0032407407407407385,
+    "delta_mAP": 0.0020075946315459142,
+    "is_symmetric": true
+  },
+  "linear_probe": {
+    "top1_accuracy": 0.9645061728395061,
+    "top5_accuracy": 1.0,
+    "f1_macro": 0.9651548104267403,
+    "auc_macro": 0.9995858944011654,
+    "n_classes": 60,
+    "n_test_samples": 648
+  },
+  "similarity": {
+    "match_mean": 0.862567663192749,
+    "match_std": 0.10145239531993866,
+    "distractor_mean": 0.8999735713005066,
+    "distractor_std": 0.0180536936968565,
+    "margin": -0.03740590810775757,
+    "auc": 0.27979215963648835
+  },
+  "per_class_stats": {
+    "mean_recall_at_1": 0.027777777777777776,
+    "std_recall_at_1": 0.0,
+    "classes_with_zero_r1": 0,
+    "classes_with_perfect_r1": 0,
+    "worst_class": "Svend Press",
+    "worst_class_r1": 0.027777777777777776
+  },
+  "audit": {
+    "n_samples": 2160,
+    "n_quasi_static": 0,
+    "n_large_excursion": 0
+  }
+}
