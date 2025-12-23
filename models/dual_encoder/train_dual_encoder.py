@@ -17,7 +17,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 from tqdm import tqdm
 import pandas as pd
 import os
@@ -194,7 +194,7 @@ def train_dual_encoder(
     # ═══════════════════════════════════════════════════════════════════════════
     # MIXED PRECISION SETUP
     # ═══════════════════════════════════════════════════════════════════════════
-    scaler = GradScaler() if use_amp and device.type == "cuda" else None
+    scaler = GradScaler('cuda') if use_amp and device.type == "cuda" else None
     if use_amp:
         if device.type == "cuda":
             print("⚡ Mixed Precision (AMP) attivato")
@@ -216,7 +216,7 @@ def train_dual_encoder(
     # Early stopping parameters
     best_loss = float('inf')
     epochs_without_improvement = 0
-    max_epochs = 100  # Numero massimo di epoche (early stopping fermerà prima se necessario)
+    max_epochs = 35  # Numero massimo di epoche (early stopping fermerà prima se necessario)
 
     # ═══════════════════════════════════════════════════════════════════════════
     # TRAINING LOOP
@@ -237,7 +237,7 @@ def train_dual_encoder(
             
             # Forward pass con Mixed Precision (se abilitato)
             if use_amp and scaler is not None:
-                with autocast():
+                with autocast(device_type='cuda'):
                     z_pose = pose_encoder(pose_tensor)
                     z_text = text_encoder(input_ids=input_ids, attention_mask=attention_mask)
                     loss = ntxent_loss(z_pose, z_text, temperature=temperature)
@@ -297,7 +297,7 @@ def train_dual_encoder(
 
                 # Validation con AMP (solo autocast, no scaler)
                 if use_amp and device.type == "cuda":
-                    with autocast():
+                    with autocast(device_type='cuda'):
                         z_pose = pose_encoder(pose_tensor)
                         z_text = text_encoder(input_ids=input_ids, attention_mask=attention_mask)
                         loss = ntxent_loss(z_pose, z_text, temperature=temperature)

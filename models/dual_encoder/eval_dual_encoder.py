@@ -26,7 +26,7 @@ project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-from models.pose_encoder.twostream_agcn import TwoStreamAGCN
+from models.pose_encoder.twostream_stgcn_plus import TwoStreamSTGCNPlusEncoder
 from models.text_encoder.distilbert_adapter import DistilBERTTextEncoder
 from data.FLAG3D.flag3d_dataset import FLAG3DDataset
 from sklearn.metrics import pairwise_distances
@@ -60,8 +60,20 @@ full_dataset = FLAG3DDataset(metadata_df=metadata_df,
 val_dataset = Subset(full_dataset, val_indices)
 
 # 2. Caricamento dei modelli e pesi addestrati
-pose_encoder = TwoStreamAGCN()
-text_encoder = DistilBERTTextEncoder()
+# Usa lo stesso setup del training (stgcn_plus + DistilBERT freezato con adapter)
+pose_encoder = TwoStreamSTGCNPlusEncoder(
+    input_dim=3,
+    hidden_channels=[64, 128, 256, 256],
+    output_dim=128,
+    num_nodes=25,
+    dropout=0.1,
+    fusion_dropout=0.3
+)
+text_encoder = DistilBERTTextEncoder(
+    freeze_bert=True,
+    use_adapter=True,
+    adapter_bottleneck=256
+)
 log_dir = project_root / "logs"
 
 # Carica il numero dell’epoca migliore

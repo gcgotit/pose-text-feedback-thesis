@@ -17,7 +17,7 @@ Troncamenti drastici (es. con T=300) dimezzavano la sequenza media; ora riduci s
 
 class FLAG3DDataset(Dataset):
     def __init__(self, metadata_df, annotations_dict, keypoints_data, tokenizer=None, 
-                 max_frames=300, text_mode='full', device='cpu'):
+                 max_frames=550, text_mode='full', device='cpu'):
         self.df = metadata_df.reset_index(drop=True)
         self.annotations = annotations_dict
         self.keypoints = keypoints_data
