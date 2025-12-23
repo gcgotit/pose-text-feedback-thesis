@@ -441,6 +441,171 @@ def analyze_retrieval_errors(
     return error_logs
 
 
+def analyze_pose2text_retrieval_errors(
+    pose_embeds: np.ndarray,
+    text_embeds: np.ndarray,
+    labels: np.ndarray,
+    dataset: Subset,
+    label_names: Dict[str, str],
+    annotations_dict: Dict,
+    output_dir: Path,
+    max_errors: int = 20
+):
+    """
+    Analizza e visualizza i Recall@1 failures per Pose → Text retrieval.
+    
+    Per ogni pose query che fallisce il retrieval del testo corretto,
+    mostra i top-5 testi recuperati con le relative descrizioni.
+    """
+    print("\n" + "=" * 70)
+    print("🏃→📝 ANALISI QUALITATIVA RETRIEVAL ERRORS (Pose → Text)")
+    print("=" * 70)
+    
+    # Normalizza embedding
+    pose_norm = normalize(pose_embeds)
+    text_norm = normalize(text_embeds)
+    
+    # Matrice di similarità (pose_i, text_j)
+    sim_matrix = pose_norm @ text_norm.T
+    
+    # Calcola ranks per Pose → Text
+    n_samples = len(pose_embeds)
+    ranks = []
+    top_k_indices = []
+    
+    for i in range(n_samples):
+        sorted_idx = np.argsort(-sim_matrix[i])  # Ordine decrescente
+        rank = np.where(sorted_idx == i)[0][0] + 1  # 1-based rank
+        ranks.append(rank)
+        top_k_indices.append(sorted_idx[:10])
+    
+    ranks = np.array(ranks)
+    top_k_indices = np.array(top_k_indices)
+    
+    # Trova gli errori (rank > 1)
+    error_indices = np.where(ranks > 1)[0]
+    n_errors = len(error_indices)
+    n_total = len(ranks)
+    
+    print(f"\n📈 Statistiche Pose → Text:")
+    print(f"   - Totale sample: {n_total}")
+    print(f"   - Recall@1 failures: {n_errors} ({100 * n_errors / n_total:.1f}%)")
+    print(f"   - Recall@1: {100 * (1 - n_errors / n_total):.2f}%")
+    
+    errors_dir = output_dir / "qualitative_errors_pose2text"
+    errors_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Ordina per rank (peggiori prima)
+    sorted_errors = error_indices[np.argsort(-ranks[error_indices])]
+    
+    error_logs = []
+    
+    # Helper per ottenere testo da un indice
+    def get_text_for_index(idx):
+        full_dataset = dataset.dataset
+        original_idx = dataset.indices[idx]
+        row = full_dataset.df.iloc[original_idx]
+        action_id = row['action_id']
+        text_info = annotations_dict.get(str(action_id), {})
+        text_name = text_info.get('name', 'N/A')
+        text_desc = text_info.get('description', 'N/A')[:150]
+        return action_id, text_name, text_desc
+    
+    for idx, err_idx in enumerate(sorted_errors[:max_errors]):
+        sample = dataset[err_idx]
+        label = labels[err_idx]
+        action_name = label_names.get(str(label), f"Unknown_{label}")
+        
+        # Ottieni info della query pose
+        action_id, text_name, text_desc = get_text_for_index(err_idx)
+        
+        # Similarità con ground truth text
+        gt_sim = sim_matrix[err_idx, err_idx]
+        
+        # Top-5 retrieved texts
+        top5_idx = top_k_indices[err_idx][:5]
+        top5_sims = sim_matrix[err_idx, top5_idx]
+        top5_labels = labels[top5_idx]
+        
+        # Log
+        log_entry = {
+            'sample_idx': int(err_idx),
+            'action_id': int(action_id),
+            'label': int(label),
+            'action_name': action_name,
+            'rank': int(ranks[err_idx]),
+            'gt_similarity': float(gt_sim),
+            'top5_labels': [int(l) for l in top5_labels],
+            'top5_sims': [float(s) for s in top5_sims]
+        }
+        error_logs.append(log_entry)
+        
+        # Print dettagli
+        print(f"\n{'─' * 60}")
+        print(f"🔴 Error #{idx + 1} | Sample {err_idx}")
+        print(f"   Query Pose: Action ID {action_id} | Label: {label} ({action_name})")
+        print(f"   GT Cosine Similarity: {gt_sim:.4f} | Rank: {ranks[err_idx]}")
+        print(f"   Expected Text: {text_name}")
+        print(f"\n   Top-5 Retrieved Texts:")
+        
+        for j, (ret_idx, ret_sim) in enumerate(zip(top5_idx, top5_sims)):
+            ret_label = labels[ret_idx]
+            ret_action_id, ret_text_name, ret_text_desc = get_text_for_index(ret_idx)
+            ret_name = label_names.get(str(ret_label), f"Unknown_{ret_label}")
+            match_str = "✓ MATCH" if ret_label == label else "✗"
+            print(f"      {j + 1}. Text {ret_idx} | Label {ret_label} ({ret_name}) | Sim: {ret_sim:.4f} {match_str}")
+            print(f"         → \"{ret_text_name}: {ret_text_desc[:80]}...\"")
+        
+        # Plot: mostra la pose query e i testi recuperati
+        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+        fig.suptitle(f'Pose→Text Error #{idx + 1}: {action_name} (Rank={ranks[err_idx]})', fontsize=12)
+        
+        # Left: Query Pose skeleton
+        ax_pose = axes[0]
+        gt_pose = sample['pose'].cpu().numpy()
+        gt_pose = gt_pose.transpose(1, 2, 0).transpose(2, 0, 1)
+        plot_skeleton_2d(ax_pose, gt_pose, f'Query Pose: {action_name}', color='blue')
+        
+        # Right: Text retrieval results
+        ax_text = axes[1]
+        ax_text.axis('off')
+        
+        # Costruisci testo per visualizzazione
+        text_lines = []
+        text_lines.append(f"Expected Text (GT):")
+        text_lines.append(f"  → {text_name}")
+        text_lines.append(f"  Similarity: {gt_sim:.4f}")
+        text_lines.append("")
+        text_lines.append(f"Top-5 Retrieved Texts:")
+        
+        for j, (ret_idx, ret_sim) in enumerate(zip(top5_idx[:5], top5_sims[:5])):
+            ret_label = labels[ret_idx]
+            ret_action_id, ret_text_name, ret_text_desc = get_text_for_index(ret_idx)
+            match_symbol = "[OK]" if ret_label == label else "[X]"
+            color_indicator = "+" if ret_label == label else "-"
+            text_lines.append(f"{color_indicator} #{j+1}. {ret_text_name[:40]}...")
+            text_lines.append(f"      Sim: {ret_sim:.4f} {match_symbol}")
+        
+        # Render text
+        text_content = "\n".join(text_lines)
+        ax_text.text(0.05, 0.95, text_content, transform=ax_text.transAxes,
+                     fontsize=10, verticalalignment='top', fontfamily='monospace',
+                     bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+        ax_text.set_title('Retrieved Texts', fontsize=11)
+        
+        plt.tight_layout()
+        plt.savefig(errors_dir / f"p2t_error_{idx + 1:03d}_sample{err_idx}.png", dpi=150, bbox_inches='tight')
+        plt.close()
+    
+    # Salva log degli errori
+    errors_df = pd.DataFrame(error_logs)
+    errors_df.to_csv(output_dir.parent / "debug_outputs" / "pose2text_retrieval_errors_log.csv", index=False)
+    
+    print(f"\n✅ Salvate {min(max_errors, n_errors)} visualizzazioni in {errors_dir}")
+    
+    return error_logs, ranks, sim_matrix
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # 2. T-SNE / PCA CON MATCH E ERRORI EVIDENZIATI
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -1059,7 +1224,13 @@ def compute_bidirectional_retrieval(
     - Text → Pose
     - Pose → Text
     
-    Metriche: Recall@1, Recall@5, Recall@10, mAP, Mean Rank, Median Rank
+    Metriche standard (sample-level):
+    - Recall@1, Recall@5, Recall@10, mAP, Mean Rank, Median Rank
+    
+    Metriche basate su label (più robuste):
+    - Label-Recall@1: % query dove almeno 1 dei top-1 ha la stessa label
+    - Label-Recall@5: % query dove almeno 1 dei top-5 ha la stessa label
+    - Top5AnyMatch@Label: (alias di Label-Recall@5, human-friendly)
     
     Verifica anche la simmetria del modello confrontando le due direzioni.
     """
@@ -1090,21 +1261,45 @@ def compute_bidirectional_retrieval(
         
         n_queries = query_sim.shape[0]
         
-        # Calcola ranks (la corrispondenza corretta è sulla diagonale)
+        # Calcola ranks e metriche label-based
         ranks = []
+        label_match_at_1 = []  # True se almeno 1 dei top-1 ha stessa label
+        label_match_at_5 = []  # True se almeno 1 dei top-5 ha stessa label
+        label_match_at_10 = []  # True se almeno 1 dei top-10 ha stessa label
+        
         for i in range(n_queries):
             sorted_idx = np.argsort(-query_sim[i])  # Ordine decrescente
+            
+            # Rank del sample esatto (metriche standard)
             rank = np.where(sorted_idx == i)[0][0] + 1  # 1-based rank
             ranks.append(rank)
+            
+            # Metriche label-based: controlla se le label dei top-k match
+            query_label = labels[i]
+            top1_labels = labels[sorted_idx[:1]]
+            top5_labels = labels[sorted_idx[:5]]
+            top10_labels = labels[sorted_idx[:10]]
+            
+            # Almeno una label corretta nei top-k?
+            label_match_at_1.append(query_label in top1_labels)
+            label_match_at_5.append(query_label in top5_labels)
+            label_match_at_10.append(query_label in top10_labels)
+        
         ranks = np.array(ranks)
         
-        # Metriche
+        # Metriche standard (sample-level)
         R1 = np.mean(ranks <= 1)
         R5 = np.mean(ranks <= 5)
         R10 = np.mean(ranks <= 10)
         mAP = np.mean([1.0 / r for r in ranks])
         mean_rank = np.mean(ranks)
         median_rank = np.median(ranks)
+        
+        # Metriche label-based (più robuste)
+        label_R1 = np.mean(label_match_at_1)
+        label_R5 = np.mean(label_match_at_5)
+        label_R10 = np.mean(label_match_at_10)
+        top5_any_match = label_R5  # Alias human-friendly
         
         results[direction] = {
             'recall_at_1': float(R1),
@@ -1113,18 +1308,30 @@ def compute_bidirectional_retrieval(
             'mAP': float(mAP),
             'mean_rank': float(mean_rank),
             'median_rank': float(median_rank),
+            # Nuove metriche label-based
+            'label_recall_at_1': float(label_R1),
+            'label_recall_at_5': float(label_R5),
+            'label_recall_at_10': float(label_R10),
+            'top5_any_match_label': float(top5_any_match),
             'ranks': ranks
         }
         
         print(f"\n{emoji} {direction_name}:")
-        print(f"   ┌{'─' * 40}┐")
-        print(f"   │ {'Recall@1:':<25} {R1:>10.2%}    │")
-        print(f"   │ {'Recall@5:':<25} {R5:>10.2%}    │")
-        print(f"   │ {'Recall@10:':<25} {R10:>10.2%}    │")
-        print(f"   │ {'mAP:':<25} {mAP:>10.4f}    │")
-        print(f"   │ {'Mean Rank:':<25} {mean_rank:>10.2f}    │")
-        print(f"   │ {'Median Rank:':<25} {median_rank:>10.1f}    │")
-        print(f"   └{'─' * 40}┘")
+        print(f"   ┌{'─' * 45}┐")
+        print(f"   │ {'METRICHE STANDARD (sample esatto):':<43} │")
+        print(f"   │   {'Recall@1:':<23} {R1:>10.2%}       │")
+        print(f"   │   {'Recall@5:':<23} {R5:>10.2%}       │")
+        print(f"   │   {'Recall@10:':<23} {R10:>10.2%}       │")
+        print(f"   │   {'mAP:':<23} {mAP:>10.4f}       │")
+        print(f"   │   {'Mean Rank:':<23} {mean_rank:>10.2f}       │")
+        print(f"   │   {'Median Rank:':<23} {median_rank:>10.1f}       │")
+        print(f"   ├{'─' * 45}┤")
+        print(f"   │ {'METRICHE LABEL-BASED (stessa classe):':<43} │")
+        print(f"   │   {'Label-Recall@1:':<23} {label_R1:>10.2%}       │")
+        print(f"   │   {'Label-Recall@5:':<23} {label_R5:>10.2%}       │")
+        print(f"   │   {'Label-Recall@10:':<23} {label_R10:>10.2%}       │")
+        print(f"   │   {'Top5AnyMatch@Label:':<23} {top5_any_match:>10.2%}       │")
+        print(f"   └{'─' * 45}┘")
     
     # Analisi simmetria
     print("\n⚖️ ANALISI SIMMETRIA:")
@@ -1529,12 +1736,20 @@ def main():
     print(f"   - mAP:       {mAP:.4f}")
     
     # ═══════════════════════════════════════════════════════════════════════════
-    # 1. Analisi qualitativa errori
+    # 1a. Analisi qualitativa errori Text → Pose
     # ═══════════════════════════════════════════════════════════════════════════
     error_logs = analyze_retrieval_errors(
         pose_embeds, text_embeds, labels, val_dataset, label_names,
         annotations_dict, sim_matrix, ranks, top_k_indices,
         plots_dir, max_errors=args.top_k_errors
+    )
+    
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 1b. Analisi qualitativa errori Pose → Text
+    # ═══════════════════════════════════════════════════════════════════════════
+    p2t_error_logs, p2t_ranks, p2t_sim_matrix = analyze_pose2text_retrieval_errors(
+        pose_embeds, text_embeds, labels, val_dataset, label_names,
+        annotations_dict, plots_dir, max_errors=args.top_k_errors
     )
     
     # ═══════════════════════════════════════════════════════════════════════════
@@ -1603,21 +1818,30 @@ def main():
     
     # Riepilogo metriche principali
     print("\n📊 RIEPILOGO METRICHE PRINCIPALI:")
-    print(f"   ┌{'─' * 50}┐")
-    print(f"   │ {'RETRIEVAL (Text→Pose):':<48} │")
-    print(f"   │   Recall@1: {R1:.2%}, Recall@5: {R5:.2%}, mAP: {mAP:.4f}    │")
-    print(f"   │ {'RETRIEVAL (Pose→Text):':<48} │")
-    print(f"   │   Recall@1: {retrieval_results['pose2text']['recall_at_1']:.2%}, "
-          f"Recall@5: {retrieval_results['pose2text']['recall_at_5']:.2%}, "
-          f"mAP: {retrieval_results['pose2text']['mAP']:.4f}    │")
-    print(f"   │ {'LINEAR PROBE:':<48} │")
+    print(f"   ┌{'─' * 60}┐")
+    print(f"   │ {'RETRIEVAL STANDARD (sample esatto):':<58} │")
+    print(f"   │   Text→Pose: R@1={R1:.2%}, R@5={R5:.2%}, mAP={mAP:.4f}            │")
+    print(f"   │   Pose→Text: R@1={retrieval_results['pose2text']['recall_at_1']:.2%}, "
+          f"R@5={retrieval_results['pose2text']['recall_at_5']:.2%}, "
+          f"mAP={retrieval_results['pose2text']['mAP']:.4f}            │")
+    print(f"   ├{'─' * 60}┤")
+    print(f"   │ {'RETRIEVAL LABEL-BASED (stessa classe):':<58} │")
+    print(f"   │   Text→Pose: Label-R@1={retrieval_results['text2pose']['label_recall_at_1']:.2%}, "
+          f"Label-R@5={retrieval_results['text2pose']['label_recall_at_5']:.2%}          │")
+    print(f"   │   Pose→Text: Label-R@1={retrieval_results['pose2text']['label_recall_at_1']:.2%}, "
+          f"Label-R@5={retrieval_results['pose2text']['label_recall_at_5']:.2%}          │")
+    print(f"   │   🎯 Top5AnyMatch@Label (T→P): {retrieval_results['text2pose']['top5_any_match_label']:.2%}                      │")
+    print(f"   │   🎯 Top5AnyMatch@Label (P→T): {retrieval_results['pose2text']['top5_any_match_label']:.2%}                      │")
+    print(f"   ├{'─' * 60}┤")
+    print(f"   │ {'LINEAR PROBE:':<58} │")
     print(f"   │   Top-1: {classification_results['top1_accuracy']:.2%}, "
           f"Top-5: {classification_results['top5_accuracy']:.2%}, "
-          f"F1-macro: {classification_results['f1_macro']:.4f}  │")
-    print(f"   └{'─' * 50}┘")
+          f"F1-macro: {classification_results['f1_macro']:.4f}                  │")
+    print(f"   └{'─' * 60}┘")
     
     print(f"\n📁 File generati:")
-    print(f"   - {plots_dir / 'qualitative_errors'}/*.png")
+    print(f"   - {plots_dir / 'qualitative_errors'}/*.png (Text→Pose errors)")
+    print(f"   - {plots_dir / 'qualitative_errors_pose2text'}/*.png (Pose→Text errors)")
     print(f"   - {plots_dir / 'embedding_tsne.png'}")
     print(f"   - {plots_dir / 'embedding_pca.png'}")
     print(f"   - {plots_dir / 'similarity_distributions.png'}")
@@ -1625,6 +1849,7 @@ def main():
     print(f"   - {plots_dir / 'bidirectional_retrieval.png'}")
     print(f"   - {plots_dir / 'per_class_analysis.png'}")
     print(f"   - {outputs_dir / 'retrieval_errors_log.csv'}")
+    print(f"   - {outputs_dir / 'pose2text_retrieval_errors_log.csv'}")
     print(f"   - {outputs_dir / 'pose_variance_stats.csv'}")
     print(f"   - {outputs_dir / 'classification_report.csv'}")
     print(f"   - {outputs_dir / 'per_class_metrics.csv'}")
@@ -1632,12 +1857,18 @@ def main():
     # Salva summary JSON completo
     summary = {
         'retrieval_text2pose': {
+            # Metriche standard (sample esatto)
             'recall_at_1': float(R1),
             'recall_at_5': float(R5),
             'recall_at_10': float(R10),
             'mAP': float(mAP),
             'mean_rank': float(retrieval_results['text2pose']['mean_rank']),
             'median_rank': float(retrieval_results['text2pose']['median_rank']),
+            # Metriche label-based (stessa classe)
+            'label_recall_at_1': float(retrieval_results['text2pose']['label_recall_at_1']),
+            'label_recall_at_5': float(retrieval_results['text2pose']['label_recall_at_5']),
+            'label_recall_at_10': float(retrieval_results['text2pose']['label_recall_at_10']),
+            'top5_any_match_label': float(retrieval_results['text2pose']['top5_any_match_label']),
             'n_samples': len(labels),
             'n_errors': int(sum(ranks > 1))
         },
