@@ -1,0 +1,12 @@
+The subject is performing a squat with correct form.
+The subject is performing a squat with feet too wide.
+The subject is performing a squat with knees inward.
+The subject is performing a squat not deep enough.
+The subject is performing a squat with the torso leaning forward.
+The subject is performing a squat with an unknown error.
+The subject is performing lunges with correct form.
+The subject is performing lunges not deep enough.
+The subject is performing lunges with knees passing the toes.
+The subject is performing a plank with correct form.
+The subject is performing a plank with a banana back.
+The subject is performing a plank with a rolled back.

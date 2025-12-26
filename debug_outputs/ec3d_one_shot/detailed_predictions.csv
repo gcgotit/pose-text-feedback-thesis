@@ -1,0 +1,89 @@
+test_index,ground_truth,ground_truth_name,prediction,prediction_name,correct,similarity_to_correct
+95,6,LUNGES - Correct,8,LUNGES - Knees passing toes,False,0.9534955
+96,6,LUNGES - Correct,6,LUNGES - Correct,True,0.97693545
+97,6,LUNGES - Correct,6,LUNGES - Correct,True,0.9223715
+98,6,LUNGES - Correct,8,LUNGES - Knees passing toes,False,0.963626
+99,6,LUNGES - Correct,8,LUNGES - Knees passing toes,False,0.96834296
+100,6,LUNGES - Correct,6,LUNGES - Correct,True,0.95147645
+101,6,LUNGES - Correct,6,LUNGES - Correct,True,0.93201846
+102,6,LUNGES - Correct,6,LUNGES - Correct,True,0.9690756
+103,6,LUNGES - Correct,6,LUNGES - Correct,True,0.976654
+104,6,LUNGES - Correct,8,LUNGES - Knees passing toes,False,0.9692944
+105,6,LUNGES - Correct,8,LUNGES - Knees passing toes,False,0.9785185
+106,6,LUNGES - Correct,6,LUNGES - Correct,True,0.9477191
+107,7,LUNGES - Not deep enough,7,LUNGES - Not deep enough,True,0.9778529
+108,7,LUNGES - Not deep enough,7,LUNGES - Not deep enough,True,0.9714016
+109,7,LUNGES - Not deep enough,7,LUNGES - Not deep enough,True,0.9737302
+110,7,LUNGES - Not deep enough,7,LUNGES - Not deep enough,True,0.98443216
+111,7,LUNGES - Not deep enough,7,LUNGES - Not deep enough,True,0.95117706
+112,7,LUNGES - Not deep enough,10,PLANK - Banana back,False,0.9662393
+113,7,LUNGES - Not deep enough,7,LUNGES - Not deep enough,True,0.9792928
+114,7,LUNGES - Not deep enough,7,LUNGES - Not deep enough,True,0.98698515
+115,7,LUNGES - Not deep enough,7,LUNGES - Not deep enough,True,0.9894917
+116,7,LUNGES - Not deep enough,7,LUNGES - Not deep enough,True,0.9822878
+117,8,LUNGES - Knees passing toes,8,LUNGES - Knees passing toes,True,0.95500946
+118,8,LUNGES - Knees passing toes,8,LUNGES - Knees passing toes,True,0.9756176
+119,8,LUNGES - Knees passing toes,6,LUNGES - Correct,False,0.9494722
+120,8,LUNGES - Knees passing toes,8,LUNGES - Knees passing toes,True,0.986431
+121,8,LUNGES - Knees passing toes,8,LUNGES - Knees passing toes,True,0.9843047
+122,8,LUNGES - Knees passing toes,8,LUNGES - Knees passing toes,True,0.97113603
+123,8,LUNGES - Knees passing toes,8,LUNGES - Knees passing toes,True,0.99245644
+124,8,LUNGES - Knees passing toes,8,LUNGES - Knees passing toes,True,0.9845772
+125,8,LUNGES - Knees passing toes,6,LUNGES - Correct,False,0.966692
+126,8,LUNGES - Knees passing toes,6,LUNGES - Correct,False,0.95583653
+205,9,PLANK - Correct,7,LUNGES - Not deep enough,False,0.91466236
+206,9,PLANK - Correct,7,LUNGES - Not deep enough,False,0.9325145
+207,9,PLANK - Correct,11,PLANK - Rolled back,False,0.94664955
+208,9,PLANK - Correct,7,LUNGES - Not deep enough,False,0.93838245
+209,9,PLANK - Correct,11,PLANK - Rolled back,False,0.9877442
+210,9,PLANK - Correct,11,PLANK - Rolled back,False,0.9901118
+211,9,PLANK - Correct,11,PLANK - Rolled back,False,0.9826242
+212,10,PLANK - Banana back,10,PLANK - Banana back,True,0.9555732
+213,10,PLANK - Banana back,10,PLANK - Banana back,True,0.9913682
+214,10,PLANK - Banana back,10,PLANK - Banana back,True,0.9580548
+215,10,PLANK - Banana back,10,PLANK - Banana back,True,0.9657808
+216,10,PLANK - Banana back,10,PLANK - Banana back,True,0.9807649
+217,10,PLANK - Banana back,10,PLANK - Banana back,True,0.95703936
+218,10,PLANK - Banana back,10,PLANK - Banana back,True,0.9585759
+219,10,PLANK - Banana back,10,PLANK - Banana back,True,0.9381859
+220,10,PLANK - Banana back,10,PLANK - Banana back,True,0.9840427
+221,11,PLANK - Rolled back,10,PLANK - Banana back,False,0.95660603
+222,11,PLANK - Rolled back,10,PLANK - Banana back,False,0.8816138
+223,11,PLANK - Rolled back,10,PLANK - Banana back,False,0.87070143
+224,11,PLANK - Rolled back,10,PLANK - Banana back,False,0.97639227
+225,11,PLANK - Rolled back,10,PLANK - Banana back,False,0.95348763
+226,11,PLANK - Rolled back,10,PLANK - Banana back,False,0.96172595
+227,11,PLANK - Rolled back,9,PLANK - Correct,False,0.98925865
+228,11,PLANK - Rolled back,10,PLANK - Banana back,False,0.8364644
+229,11,PLANK - Rolled back,10,PLANK - Banana back,False,0.8032094
+340,0,SQUAT - Correct,0,SQUAT - Correct,True,0.98636293
+341,0,SQUAT - Correct,0,SQUAT - Correct,True,0.9865535
+342,0,SQUAT - Correct,0,SQUAT - Correct,True,0.9853057
+343,0,SQUAT - Correct,0,SQUAT - Correct,True,0.98679924
+344,0,SQUAT - Correct,0,SQUAT - Correct,True,0.9828571
+345,0,SQUAT - Correct,0,SQUAT - Correct,True,0.98369503
+346,0,SQUAT - Correct,0,SQUAT - Correct,True,0.98229086
+347,0,SQUAT - Correct,0,SQUAT - Correct,True,0.9813153
+348,0,SQUAT - Correct,0,SQUAT - Correct,True,0.9782771
+349,0,SQUAT - Correct,0,SQUAT - Correct,True,0.9821042
+350,1,SQUAT - Feet too wide,0,SQUAT - Correct,False,0.97228587
+351,1,SQUAT - Feet too wide,0,SQUAT - Correct,False,0.97973037
+352,1,SQUAT - Feet too wide,0,SQUAT - Correct,False,0.9788983
+353,1,SQUAT - Feet too wide,0,SQUAT - Correct,False,0.98071015
+354,1,SQUAT - Feet too wide,0,SQUAT - Correct,False,0.97635996
+355,2,SQUAT - Knees inward,1,SQUAT - Feet too wide,False,0.93362087
+356,2,SQUAT - Knees inward,0,SQUAT - Correct,False,0.9446535
+357,2,SQUAT - Knees inward,0,SQUAT - Correct,False,0.9437624
+358,2,SQUAT - Knees inward,0,SQUAT - Correct,False,0.9407366
+359,2,SQUAT - Knees inward,0,SQUAT - Correct,False,0.9512256
+360,3,SQUAT - Not deep enough,5,SQUAT - Unknown error,False,0.9484578
+361,3,SQUAT - Not deep enough,5,SQUAT - Unknown error,False,0.94236654
+362,3,SQUAT - Not deep enough,0,SQUAT - Correct,False,0.93310225
+363,3,SQUAT - Not deep enough,1,SQUAT - Feet too wide,False,0.9437752
+364,4,SQUAT - Torso leaning forward,1,SQUAT - Feet too wide,False,0.9412773
+365,4,SQUAT - Torso leaning forward,1,SQUAT - Feet too wide,False,0.9699476
+366,4,SQUAT - Torso leaning forward,5,SQUAT - Unknown error,False,0.982239
+367,4,SQUAT - Torso leaning forward,0,SQUAT - Correct,False,0.97147954
+368,4,SQUAT - Torso leaning forward,0,SQUAT - Correct,False,0.9672332
+369,4,SQUAT - Torso leaning forward,1,SQUAT - Feet too wide,False,0.9772799
+370,4,SQUAT - Torso leaning forward,1,SQUAT - Feet too wide,False,0.9521408
