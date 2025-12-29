@@ -1,0 +1,20 @@
+{
+  "experiment": "few-shot prototype classification",
+  "k_list": [
+    1,
+    2,
+    5,
+    10
+  ],
+  "num_runs": 20,
+  "seed_base": 42,
+  "normalize_embeddings": true,
+  "prototype_type": "mean",
+  "distance": "cosine",
+  "max_len": 150,
+  "best_epoch": 30,
+  "train_samples": 283,
+  "test_samples": 88,
+  "num_classes": 12,
+  "embedding_dim": 128
+}
