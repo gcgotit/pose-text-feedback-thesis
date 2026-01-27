@@ -1,0 +1,6 @@
+Method,Top-1 Acc,Top-5 Acc,Macro-F1
+Random Forest (handcrafted),0.739,-,0.679
+Linear Probe (frozen encoder),0.6477272727272727,0.989,0.5726009284832814
+MLP Probe (frozen encoder),0.7159090909090909,1.000,0.613301849665486
+Fine-tuning (pre-trained),0.7840909090909091,0.989,0.7170277887981237
+From Scratch (random init),0.7159090909090909,1.000,0.6286053815465581
