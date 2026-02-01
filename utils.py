@@ -4,7 +4,139 @@ import pickle
 import json
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any, Union
+
+# ==============================================================================
+# Configuration Constants
+# ==============================================================================
+
+# Default target frames for temporal resampling
+DEFAULT_TARGET_FRAMES = 300
+
+
+# ==============================================================================
+# Temporal Resampling Utilities
+# ==============================================================================
+
+def resample_sequence(
+    seq: np.ndarray, 
+    target_len: int, 
+    method: str = "linear"
+) -> np.ndarray:
+    """
+    Resample a pose sequence to a fixed target length.
+    
+    This function handles both downsampling (T > target_len) and upsampling (T < target_len)
+    using either linear interpolation or index-based resampling.
+    
+    Args:
+        seq: Input sequence of shape (T, V, C) where:
+             - T = number of frames (variable)
+             - V = number of joints (25 for NTU-RGB+D)
+             - C = coordinates (3 for x, y, z)
+        target_len: Desired output length
+        method: Resampling method:
+                - "linear": Linear interpolation (recommended for upsampling)
+                - "index": Index-based uniform sampling (faster, good for downsampling)
+    
+    Returns:
+        Resampled sequence of shape (target_len, V, C) with dtype float32
+    
+    Example:
+        >>> seq = np.random.randn(80, 25, 3).astype(np.float32)  # EC3D-like
+        >>> resampled = resample_sequence(seq, target_len=300, method="linear")
+        >>> print(resampled.shape)  # (300, 25, 3)
+    """
+    seq = np.asarray(seq, dtype=np.float32)
+    
+    if seq.ndim != 3:
+        raise ValueError(f"Expected 3D array (T, V, C), got shape {seq.shape}")
+    
+    T, V, C = seq.shape
+    
+    # No resampling needed
+    if T == target_len:
+        return seq
+    
+    # Downsampling: use uniform index selection (fast and preserves key frames)
+    if T > target_len:
+        indices = np.linspace(0, T - 1, target_len).astype(int)
+        return seq[indices].astype(np.float32)
+    
+    # Upsampling: T < target_len
+    if method == "index":
+        # Index-based: repeat frames uniformly
+        indices = np.linspace(0, T - 1, target_len).astype(int)
+        return seq[indices].astype(np.float32)
+    
+    elif method == "linear":
+        # Linear interpolation for smooth upsampling
+        # Interpolate each joint and coordinate independently
+        t_original = np.linspace(0, 1, T)
+        t_target = np.linspace(0, 1, target_len)
+        
+        resampled = np.zeros((target_len, V, C), dtype=np.float32)
+        
+        for v in range(V):
+            for c in range(C):
+                # Use numpy's interp for 1D linear interpolation
+                resampled[:, v, c] = np.interp(t_target, t_original, seq[:, v, c])
+        
+        return resampled
+    
+    else:
+        raise ValueError(f"Unknown method: {method}. Use 'linear' or 'index'.")
+
+
+def resample_batch(
+    sequences: List[np.ndarray],
+    target_len: int,
+    method: str = "linear",
+    show_progress: bool = False
+) -> List[np.ndarray]:
+    """
+    Resample a list of sequences to a fixed target length.
+    
+    Args:
+        sequences: List of sequences, each with shape (T_i, V, C)
+        target_len: Desired output length for all sequences
+        method: Resampling method ("linear" or "index")
+        show_progress: If True, show progress bar (requires tqdm)
+    
+    Returns:
+        List of resampled sequences, each with shape (target_len, V, C)
+    """
+    if show_progress:
+        try:
+            from tqdm import tqdm
+            iterator = tqdm(sequences, desc=f"Resampling to T={target_len}")
+        except ImportError:
+            iterator = sequences
+    else:
+        iterator = sequences
+    
+    return [resample_sequence(seq, target_len, method) for seq in iterator]
+
+
+def get_sequence_length_stats(sequences: List[np.ndarray]) -> Dict[str, float]:
+    """
+    Compute statistics on sequence lengths.
+    
+    Args:
+        sequences: List of sequences, each with shape (T_i, ...)
+    
+    Returns:
+        Dict with min, max, mean, std, median of sequence lengths
+    """
+    lengths = [seq.shape[0] for seq in sequences]
+    return {
+        'min': int(np.min(lengths)),
+        'max': int(np.max(lengths)),
+        'mean': float(np.mean(lengths)),
+        'std': float(np.std(lengths)),
+        'median': float(np.median(lengths)),
+        'count': len(lengths)
+    }
 
 
 # ==============================================================================
@@ -76,7 +208,9 @@ EC3D_OLD_TO_NEW_LABEL_MAP = {
 def load_ec3d(
     data_dir: str | Path,
     no_unknown: bool = False,
-    return_split: bool = True
+    return_split: bool = True,
+    resampled: bool = False,
+    target_frames: int = DEFAULT_TARGET_FRAMES
 ) -> Dict[str, Any]:
     """
     Load EC3D dataset with or without the Unknown class.
@@ -86,10 +220,15 @@ def load_ec3d(
         no_unknown: If True, load the paper-aligned version without Unknown class (11 classes)
                    If False, load the original version with Unknown class (12 classes)
         return_split: If True, also load and return the cross-subject split
+        resampled: If True, load the pre-resampled version of the dataset
+                   (requires running build_ec3d_resampled.py first)
+        target_frames: Target frame count for resampled data (used in filename)
     
     Returns:
         dict with keys:
-            - 'sequences': list of np.array (T, 3, 25)
+            - 'sequences': list of np.array - shape depends on version:
+                * Original: (T, 3, 25) with variable T
+                * Resampled: (target_frames, 25, 3) with fixed T
             - 'labels': np.array of labels
             - 'meta': list of metadata dicts
             - 'num_classes': number of classes (11 or 12)
@@ -97,65 +236,126 @@ def load_ec3d(
             - 'short_names': short names for plots
             - 'train_indices': (if return_split) training indices
             - 'test_indices': (if return_split) test indices
+            - 'resampled': bool indicating if data is resampled
+            - 'target_frames': int, the target frame count (if resampled)
     """
     data_dir = Path(data_dir)
     
-    if no_unknown:
-        # Load paper-aligned dataset (no unknown)
-        pkl_path = data_dir / "ec3d_sequences_no_unknown.pkl"
+    # Determine which file to load based on options
+    if resampled:
+        # Load pre-resampled dataset
+        suffix = f"_T{target_frames}_resampled"
+        if no_unknown:
+            pkl_path = data_dir / f"ec3d_sequences_no_unknown{suffix}.pkl"
+            split_suffix = f"_no_unknown{suffix}"
+        else:
+            pkl_path = data_dir / f"ec3d_sequences{suffix}.pkl"
+            split_suffix = suffix
+        
         if not pkl_path.exists():
             raise FileNotFoundError(
-                f"File not found: {pkl_path}\n"
-                "Please run notebook 00_ec3d_build_no_unknown.ipynb first to create this file."
+                f"Resampled file not found: {pkl_path}\n"
+                "Please run: python data/EC3D/build_ec3d_resampled.py first."
             )
         
         with open(pkl_path, "rb") as f:
             data = pickle.load(f)
         
         result = {
-            'sequences': data['sequences'],
+            'sequences': data['sequences'],  # Already (target_frames, 25, 3)
             'labels': data['labels'],
             'meta': data['meta'],
-            'num_classes': 11,
-            'id_to_name': EC3D_ID_TO_NAME_NO_UNKNOWN,
-            'short_names': EC3D_SHORT_NAMES_NO_UNKNOWN,
-            'old_to_new_map': EC3D_OLD_TO_NEW_LABEL_MAP,
+            'resampled': True,
+            'target_frames': target_frames,
         }
         
+        # Set class info
+        if no_unknown:
+            result.update({
+                'num_classes': 11,
+                'id_to_name': EC3D_ID_TO_NAME_NO_UNKNOWN,
+                'short_names': EC3D_SHORT_NAMES_NO_UNKNOWN,
+                'old_to_new_map': EC3D_OLD_TO_NEW_LABEL_MAP,
+            })
+        else:
+            result.update({
+                'num_classes': 12,
+                'id_to_name': EC3D_ID_TO_NAME_WITH_UNKNOWN,
+                'short_names': EC3D_SHORT_NAMES_WITH_UNKNOWN,
+            })
+        
         if return_split:
-            # Load the no_unknown split
-            split_path = data_dir / "split_cross_subject_no_unknown.json"
+            # Resampled datasets use the same split as original
+            if no_unknown:
+                split_path = data_dir / "split_cross_subject_no_unknown.json"
+            else:
+                split_path = data_dir / "split_cross_subject.json"
+            
             if split_path.exists():
                 with open(split_path, "r") as f:
                     split = json.load(f)
                 result['train_indices'] = np.array(split['train_indices'])
                 result['test_indices'] = np.array(split['test_indices'])
             else:
-                raise FileNotFoundError(
-                    f"Split file not found: {split_path}\n"
-                    "Please run notebook 00_ec3d_build_no_unknown.ipynb first."
-                )
+                raise FileNotFoundError(f"Split file not found: {split_path}")
+    
     else:
-        # Load original dataset (with unknown)
-        pkl_path = data_dir / "ec3d_sequences.pkl"
-        with open(pkl_path, "rb") as f:
-            data = pickle.load(f)
-        
-        result = {
-            'sequences': data['sequences'],
-            'labels': data['labels'],
-            'meta': data['meta'],
-            'num_classes': 12,
-            'id_to_name': EC3D_ID_TO_NAME_WITH_UNKNOWN,
-            'short_names': EC3D_SHORT_NAMES_WITH_UNKNOWN,
-        }
-        
-        if return_split:
-            split_path = data_dir / "split_cross_subject.json"
-            with open(split_path, "r") as f:
-                split = json.load(f)
-            result['train_indices'] = np.array(split['train_indices'])
-            result['test_indices'] = np.array(split['test_indices'])
+        # Load original dataset (legacy behavior)
+        if no_unknown:
+            pkl_path = data_dir / "ec3d_sequences_no_unknown.pkl"
+            if not pkl_path.exists():
+                raise FileNotFoundError(
+                    f"File not found: {pkl_path}\n"
+                    "Please run notebook 00_ec3d_build_no_unknown.ipynb first to create this file."
+                )
+            
+            with open(pkl_path, "rb") as f:
+                data = pickle.load(f)
+            
+            result = {
+                'sequences': data['sequences'],
+                'labels': data['labels'],
+                'meta': data['meta'],
+                'num_classes': 11,
+                'id_to_name': EC3D_ID_TO_NAME_NO_UNKNOWN,
+                'short_names': EC3D_SHORT_NAMES_NO_UNKNOWN,
+                'old_to_new_map': EC3D_OLD_TO_NEW_LABEL_MAP,
+                'resampled': False,
+            }
+            
+            if return_split:
+                split_path = data_dir / "split_cross_subject_no_unknown.json"
+                if split_path.exists():
+                    with open(split_path, "r") as f:
+                        split = json.load(f)
+                    result['train_indices'] = np.array(split['train_indices'])
+                    result['test_indices'] = np.array(split['test_indices'])
+                else:
+                    raise FileNotFoundError(
+                        f"Split file not found: {split_path}\n"
+                        "Please run notebook 00_ec3d_build_no_unknown.ipynb first."
+                    )
+        else:
+            pkl_path = data_dir / "ec3d_sequences.pkl"
+            with open(pkl_path, "rb") as f:
+                data = pickle.load(f)
+            
+            result = {
+                'sequences': data['sequences'],
+                'labels': data['labels'],
+                'meta': data['meta'],
+                'num_classes': 12,
+                'id_to_name': EC3D_ID_TO_NAME_WITH_UNKNOWN,
+                'short_names': EC3D_SHORT_NAMES_WITH_UNKNOWN,
+                'resampled': False,
+            }
+            
+            if return_split:
+                split_path = data_dir / "split_cross_subject.json"
+                with open(split_path, "r") as f:
+                    split = json.load(f)
+                result['train_indices'] = np.array(split['train_indices'])
+                result['test_indices'] = np.array(split['test_indices'])
     
     return result
 

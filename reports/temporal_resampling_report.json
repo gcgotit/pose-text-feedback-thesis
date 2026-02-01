@@ -1,0 +1,181 @@
+{
+  "generated_at": "2026-02-01T20:42:40.180928",
+  "target_frames": 300,
+  "files": {
+    "flag3d": {
+      "base_keypoints": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/FLAG3D/flag3d_keypoint.pkl",
+        "size_bytes": 1770000173,
+        "size_mb": 1688.0,
+        "checksum_md5_partial": "8ef2e248ff0f7d67"
+      },
+      "base_metadata": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/FLAG3D/flag3d_metadata.csv",
+        "size_bytes": 487188,
+        "size_mb": 0.46,
+        "checksum_md5_partial": "cdb68948f0dd5735"
+      },
+      "augmented_legacy": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/FLAG3D/flag3d_keypoint_augmented.pkl",
+        "size_bytes": 2397789286,
+        "size_mb": 2286.71,
+        "checksum_md5_partial": "f3c7e5a76d308205"
+      },
+      "augmented_resampled": {
+        "exists": false,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/FLAG3D/flag3d_keypoint_augmented_T300_resampled.pkl"
+      },
+      "split_combined_resampled": {
+        "exists": false,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/FLAG3D/flag3d_split_combined_T300_resampled.json"
+      }
+    },
+    "ec3d": {
+      "original": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/EC3D/ec3d_sequences.pkl",
+        "size_bytes": 8996711,
+        "size_mb": 8.58,
+        "checksum_md5_partial": "9bd11b8ad031c3ac"
+      },
+      "original_no_unknown": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/EC3D/ec3d_sequences_no_unknown.pkl",
+        "size_bytes": 8755442,
+        "size_mb": 8.35,
+        "checksum_md5_partial": "9bd11b8ad031c3ac"
+      },
+      "resampled": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/EC3D/ec3d_sequences_T300_resampled.pkl",
+        "size_bytes": 33452896,
+        "size_mb": 31.9,
+        "checksum_md5_partial": "ea94333729f8cde8"
+      },
+      "resampled_no_unknown": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/EC3D/ec3d_sequences_no_unknown_T300_resampled.pkl",
+        "size_bytes": 32646268,
+        "size_mb": 31.13,
+        "checksum_md5_partial": "ea94333729f8cde8"
+      }
+    },
+    "modified": {
+      "utils": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/utils.py",
+        "size_bytes": 16232,
+        "size_mb": 0.02,
+        "checksum_md5_partial": "e020fff1fc5b6ea1"
+      },
+      "flag3d_dataset": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/FLAG3D/flag3d_dataset.py",
+        "size_bytes": 6768,
+        "size_mb": 0.01,
+        "checksum_md5_partial": "18f5aa625be0d607"
+      },
+      "flag3d_dataset_aug": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/FLAG3D/flag3d_dataset_aug.py",
+        "size_bytes": 7875,
+        "size_mb": 0.01,
+        "checksum_md5_partial": "6d7dc0369e747973"
+      },
+      "augment_script": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/FLAG3D/augment_and_save_FLAG3D.py",
+        "size_bytes": 18725,
+        "size_mb": 0.02,
+        "checksum_md5_partial": "ffe239b3e052c786"
+      },
+      "ec3d_builder": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/data/EC3D/build_ec3d_resampled.py",
+        "size_bytes": 9861,
+        "size_mb": 0.01,
+        "checksum_md5_partial": "1c6de73f4e43c927"
+      },
+      "ec3d_config": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/models/EC3D/ec3d_config.py",
+        "size_bytes": 9068,
+        "size_mb": 0.01,
+        "checksum_md5_partial": "ff56e2e3d5e0c7e8"
+      },
+      "sanity_check": {
+        "exists": true,
+        "path": "/home/giov/Scrivania/Tesi/pose-text-feedback-thesis/scripts/sanity_check_resampling.py",
+        "size_bytes": 9315,
+        "size_mb": 0.01,
+        "checksum_md5_partial": "1c2a78db1033eb9c"
+      }
+    }
+  },
+  "statistics": {
+    "flag3d_original": {
+      "count": 7200,
+      "min": 301,
+      "max": 3089,
+      "mean": 818.78,
+      "std": 350.39,
+      "median": 757.0
+    },
+    "ec3d_original": {
+      "count": 371,
+      "min": 24,
+      "max": 208,
+      "mean": 80.29,
+      "std": 27.94,
+      "median": 79.0
+    },
+    "ec3d_resampled": {
+      "count": 371,
+      "min": 300,
+      "max": 300,
+      "mean": 300.0,
+      "std": 0.0,
+      "median": 300.0,
+      "resampling_info": {
+        "target_frames": 300,
+        "method": "linear",
+        "original_stats": {
+          "min": 24,
+          "max": 208,
+          "mean": 80.29380053908356,
+          "std": 27.935668094090396,
+          "median": 79.0,
+          "count": 371
+        },
+        "output_shape": [
+          300,
+          25,
+          3
+        ],
+        "num_sequences": 371
+      }
+    }
+  },
+  "configuration": {
+    "legacy": {
+      "flag3d_max_frames": 550,
+      "flag3d_aug_max_frames": 300,
+      "ec3d_max_len": 150,
+      "preprocessing": "padding with zeros / truncation"
+    },
+    "resampled": {
+      "target_frames": 300,
+      "method": "linear interpolation (upsampling) / uniform indices (downsampling)",
+      "preprocessing": "uniform temporal resampling"
+    }
+  },
+  "instructions": {
+    "generate_ec3d_resampled": "# Generate EC3D resampled dataset (12 classes)\ncd /home/giov/Scrivania/Tesi/pose-text-feedback-thesis\npython data/EC3D/build_ec3d_resampled.py --target_frames 300\n\n# Generate EC3D resampled dataset (11 classes, no unknown)\npython data/EC3D/build_ec3d_resampled.py --target_frames 300 --no_unknown",
+    "generate_flag3d_augmented_resampled": "# Generate FLAG3D augmented with resampling\ncd /home/giov/Scrivania/Tesi/pose-text-feedback-thesis\npython data/FLAG3D/augment_and_save_FLAG3D.py --use_resampling --target_frames 300",
+    "validate": "# Run sanity check\ncd /home/giov/Scrivania/Tesi/pose-text-feedback-thesis\npython scripts/sanity_check_resampling.py",
+    "use_in_notebooks": "# In EC3D notebooks, add at the top:\nUSE_RESAMPLED = True  # Enable resampled mode\nTARGET_FRAMES = 300\n\n# Then use:\nfrom ec3d_config import EC3DDataset, load_ec3d_data, USE_RESAMPLED, TARGET_FRAMES\n\ndata = load_ec3d_data(use_resampled=USE_RESAMPLED)\ndataset = EC3DDataset(data['sequences'], data['labels'], indices, use_resampled=USE_RESAMPLED)"
+  }
+}
