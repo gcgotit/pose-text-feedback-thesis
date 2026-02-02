@@ -284,3 +284,5 @@ if __name__ == "__main__":
         print(f"⚠️ Dati resampled non disponibili: {e}")
         print("   Esegui: python data/EC3D/build_ec3d_resampled.py")
 
+
+

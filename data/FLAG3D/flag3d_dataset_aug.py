@@ -18,6 +18,12 @@ from utils import resample_sequence, DEFAULT_TARGET_FRAMES
 
 
 '''
+🎯 Perché 768  (era) un buon compromesso:
+- È vicino alla mediana, quindi conserva almeno metà delle sequenze quasi complete.
+- È una potenza di 2 → batching e GPU efficiency.
+- Rimane gestibile in termini di VRAM, mentre 1024 potrebbe essere troppo.
+- Troncamenti drastici (es. con T=300) dimezzavano la sequenza media; ora riduci solo il 5–10% in media.
+
 🎯 Configurazione temporale FLAG3D con augmentation:
 
 Legacy (default, use_resampling=False):
