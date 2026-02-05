@@ -1,0 +1,89 @@
+test_index,ground_truth,ground_truth_name,pred_generic,pred_flag3d_mean,pred_flag3d_max,correct_generic,correct_flag3d_mean,correct_flag3d_max
+95,6,LUNGES - Correct,4,4,4,False,False,False
+96,6,LUNGES - Correct,4,4,4,False,False,False
+97,6,LUNGES - Correct,4,4,4,False,False,False
+98,6,LUNGES - Correct,4,4,4,False,False,False
+99,6,LUNGES - Correct,4,4,4,False,False,False
+100,6,LUNGES - Correct,4,4,4,False,False,False
+101,6,LUNGES - Correct,4,4,4,False,False,False
+102,6,LUNGES - Correct,4,4,4,False,False,False
+103,6,LUNGES - Correct,4,4,4,False,False,False
+104,6,LUNGES - Correct,4,4,4,False,False,False
+105,6,LUNGES - Correct,4,4,4,False,False,False
+106,6,LUNGES - Correct,4,4,4,False,False,False
+107,7,LUNGES - Not deep enough,4,4,4,False,False,False
+108,7,LUNGES - Not deep enough,4,4,4,False,False,False
+109,7,LUNGES - Not deep enough,4,4,4,False,False,False
+110,7,LUNGES - Not deep enough,4,4,4,False,False,False
+111,7,LUNGES - Not deep enough,4,4,4,False,False,False
+112,7,LUNGES - Not deep enough,4,4,4,False,False,False
+113,7,LUNGES - Not deep enough,4,4,4,False,False,False
+114,7,LUNGES - Not deep enough,4,4,4,False,False,False
+115,7,LUNGES - Not deep enough,4,4,4,False,False,False
+116,7,LUNGES - Not deep enough,4,4,4,False,False,False
+117,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+118,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+119,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+120,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+121,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+122,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+123,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+124,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+125,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+126,8,LUNGES - Knees passing toes,4,4,4,False,False,False
+205,9,PLANK - Correct,4,4,4,False,False,False
+206,9,PLANK - Correct,4,4,4,False,False,False
+207,9,PLANK - Correct,4,4,4,False,False,False
+208,9,PLANK - Correct,4,4,4,False,False,False
+209,9,PLANK - Correct,4,4,4,False,False,False
+210,9,PLANK - Correct,4,4,4,False,False,False
+211,9,PLANK - Correct,4,4,4,False,False,False
+212,10,PLANK - Banana back,4,4,4,False,False,False
+213,10,PLANK - Banana back,4,4,4,False,False,False
+214,10,PLANK - Banana back,4,4,4,False,False,False
+215,10,PLANK - Banana back,4,4,4,False,False,False
+216,10,PLANK - Banana back,4,4,4,False,False,False
+217,10,PLANK - Banana back,4,4,4,False,False,False
+218,10,PLANK - Banana back,4,4,4,False,False,False
+219,10,PLANK - Banana back,4,4,4,False,False,False
+220,10,PLANK - Banana back,4,4,4,False,False,False
+221,11,PLANK - Rolled back,4,4,4,False,False,False
+222,11,PLANK - Rolled back,4,4,4,False,False,False
+223,11,PLANK - Rolled back,4,4,4,False,False,False
+224,11,PLANK - Rolled back,4,4,4,False,False,False
+225,11,PLANK - Rolled back,4,4,4,False,False,False
+226,11,PLANK - Rolled back,4,4,4,False,False,False
+227,11,PLANK - Rolled back,4,4,4,False,False,False
+228,11,PLANK - Rolled back,4,4,4,False,False,False
+229,11,PLANK - Rolled back,4,4,4,False,False,False
+340,0,SQUAT - Correct,4,4,4,False,False,False
+341,0,SQUAT - Correct,4,4,4,False,False,False
+342,0,SQUAT - Correct,4,4,4,False,False,False
+343,0,SQUAT - Correct,4,4,4,False,False,False
+344,0,SQUAT - Correct,4,4,4,False,False,False
+345,0,SQUAT - Correct,4,4,4,False,False,False
+346,0,SQUAT - Correct,4,4,4,False,False,False
+347,0,SQUAT - Correct,4,4,4,False,False,False
+348,0,SQUAT - Correct,4,4,4,False,False,False
+349,0,SQUAT - Correct,4,4,4,False,False,False
+350,1,SQUAT - Feet too wide,4,4,4,False,False,False
+351,1,SQUAT - Feet too wide,4,4,4,False,False,False
+352,1,SQUAT - Feet too wide,4,4,4,False,False,False
+353,1,SQUAT - Feet too wide,4,4,4,False,False,False
+354,1,SQUAT - Feet too wide,4,4,4,False,False,False
+355,2,SQUAT - Knees inward,4,4,4,False,False,False
+356,2,SQUAT - Knees inward,4,4,4,False,False,False
+357,2,SQUAT - Knees inward,4,4,4,False,False,False
+358,2,SQUAT - Knees inward,4,4,4,False,False,False
+359,2,SQUAT - Knees inward,4,4,4,False,False,False
+360,3,SQUAT - Not deep enough,4,4,4,False,False,False
+361,3,SQUAT - Not deep enough,4,4,4,False,False,False
+362,3,SQUAT - Not deep enough,4,4,4,False,False,False
+363,3,SQUAT - Not deep enough,4,4,4,False,False,False
+364,4,SQUAT - Torso leaning forward,4,4,4,True,True,True
+365,4,SQUAT - Torso leaning forward,4,4,4,True,True,True
+366,4,SQUAT - Torso leaning forward,4,4,4,True,True,True
+367,4,SQUAT - Torso leaning forward,4,4,4,True,True,True
+368,4,SQUAT - Torso leaning forward,4,4,4,True,True,True
+369,4,SQUAT - Torso leaning forward,4,4,4,True,True,True
+370,4,SQUAT - Torso leaning forward,4,4,4,True,True,True
