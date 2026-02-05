@@ -76,7 +76,10 @@ def train_dual_encoder(
     freeze_bert=True,
     use_adapter=True,
     use_amp=True,
-    use_compile=True
+    use_compile=True,
+    use_resampling=False,
+    target_frames=300,
+    resample_method="linear"
 ):
     """
     Addestra il dual encoder (pose + text) con loss contrastiva NT-Xent.
@@ -105,16 +108,27 @@ def train_dual_encoder(
         use_compile = False
 
     # Carica i dati (originali o combinati con augmentation)
-    print(f"\n📥 Caricamento dati {'COMBINATI (originali + aumentati)' if use_augmented else 'ORIGINALI'}...")
-    keypoints_data, metadata_df, annotations_dict, split = load_flag3d_data(
-        use_augmented=use_augmented,
-        data_dir=data_dir
-    )
+    if use_resampling:
+        print(f"\n📥 Caricamento dati CON RESAMPLING a T={target_frames}...")
+        from data.FLAG3D.load_augmented_data import load_flag3d_data_resampled
+        keypoints_data, metadata_df, annotations_dict, split = load_flag3d_data_resampled(
+            target_frames=target_frames,
+            data_dir=data_dir
+        )
+    else:
+        print(f"\n📥 Caricamento dati {'COMBINATI (originali + aumentati)' if use_augmented else 'ORIGINALI'}...")
+        keypoints_data, metadata_df, annotations_dict, split = load_flag3d_data(
+            use_augmented=use_augmented,
+            data_dir=data_dir
+        )
+    
     train_indices = split["train_indices"]
     val_indices = split["val_indices"]
     
     print(f"   - Training samples: {len(train_indices)}")
     print(f"   - Validation samples: {len(val_indices)}")
+    if use_resampling:
+        print(f"   - Resampling: T={target_frames}, method={resample_method}")
     if use_augmented and "augmented_train_count" in split:
         print(f"   - (di cui {split['original_train_count']} originali + {split['augmented_train_count']} aumentati)")
 
@@ -123,7 +137,10 @@ def train_dual_encoder(
         metadata_df=metadata_df,
         annotations_dict=annotations_dict,
         keypoints_data=keypoints_data,
-        device=device
+        device=device,
+        use_resampling=use_resampling,
+        target_frames=target_frames,
+        resample_method=resample_method
     )
     # Split dataset in train and val
     train_dataset = Subset(full_dataset, train_indices)
@@ -216,7 +233,7 @@ def train_dual_encoder(
     # Early stopping parameters
     best_loss = float('inf')
     epochs_without_improvement = 0
-    max_epochs = 35  # Numero massimo di epoche (early stopping fermerà prima se necessario)
+    max_epochs = 100  # Numero massimo di epoche (early stopping fermerà prima se necessario)
 
     # ═══════════════════════════════════════════════════════════════════════════
     # TRAINING LOOP
@@ -387,7 +404,7 @@ def train_dual_encoder(
 if __name__ == "__main__":
 
     train_dual_encoder(
-        temperature=0.075,
+        temperature=0.10,
         patience=8,
         device="cuda",
         use_augmented=True,
@@ -396,5 +413,10 @@ if __name__ == "__main__":
         freeze_bert=True,      # Congela DistilBERT (riduce memoria e parametri trainabili)
         use_adapter=True,      # Adapter MLP per contrastive learning
         use_amp=True,          # Mixed Precision (riduce memoria ~50%)
-        use_compile=True       # torch.compile (velocizza ~20-30% su PyTorch 2.0+)
+        use_compile=True,       # torch.compile (velocizza ~20-30% su PyTorch 2.0+)
+
+        # 🆕 Attiva resampling uniforme a 300 frame
+        use_resampling=True,
+        target_frames=300,
+        resample_method="linear"
     )

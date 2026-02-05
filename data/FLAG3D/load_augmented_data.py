@@ -256,3 +256,59 @@ if __name__ == "__main__":
         print("  Dati aumentati non trovati.")
         print("  Esegui: python augment_and_save_FLAG3D.py")
 
+
+def load_flag3d_data_resampled(
+    target_frames: int = 300,
+    data_dir: Optional[Path] = None
+) -> Tuple[dict, pd.DataFrame, dict, dict]:
+    """
+    Carica i dati FLAG3D con resampling (originali + augmented resampled).
+    
+    I dati originali vengono resampled on-the-fly nel Dataset,
+    i dati augmented sono già pre-resampled a target_frames.
+    """
+    if data_dir is None:
+        data_dir = get_data_dir()
+    
+    suffix = f"_T{target_frames}_resampled"
+    
+    # Carica dati originali (verranno resampled nel Dataset)
+    orig_kp, orig_meta, orig_ann, orig_split = load_original_data(data_dir)
+    
+    # Carica dati augmented già resampled
+    aug_keypoints_path = data_dir / f"flag3d_keypoint_augmented{suffix}.pkl"
+    if not aug_keypoints_path.exists():
+        raise FileNotFoundError(
+            f"File augmented resampled non trovato: {aug_keypoints_path}\n"
+            f"Esegui: python augment_and_save_FLAG3D.py --use_resampling --target_frames {target_frames}"
+        )
+    
+    with open(aug_keypoints_path, "rb") as f:
+        aug_kp = pickle.load(f)
+    
+    aug_meta = pd.read_csv(data_dir / f"flag3d_metadata_augmented{suffix}.csv")
+    
+    with open(data_dir / f"flag3d_annotations_augmented{suffix}.json", "r", encoding="utf-8") as f:
+        aug_ann = json.load(f)
+    
+    # Combina
+    combined_keypoints = {
+        "annotations": orig_kp["annotations"] + aug_kp["annotations"]
+    }
+    
+    aug_meta_reset = aug_meta.copy()
+    aug_meta_reset.index = range(len(orig_meta), len(orig_meta) + len(aug_meta))
+    combined_metadata = pd.concat([orig_meta, aug_meta_reset], ignore_index=True)
+    
+    combined_annotations = {**orig_ann, **aug_ann}
+    
+    # Carica split combinato resampled
+    split_path = data_dir / f"flag3d_split_combined{suffix}.json"
+    with open(split_path, "r", encoding="utf-8") as f:
+        combined_split = json.load(f)
+    
+    # Aggiungi info resampling
+    combined_split['use_resampling'] = True
+    combined_split['target_frames'] = target_frames
+    
+    return combined_keypoints, combined_metadata, combined_annotations, combined_split
